@@ -8,6 +8,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
 
+import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 /**
@@ -21,18 +22,19 @@ class UserEndpoint @Inject()(userDAO: UserService) extends Controller {
     userDAO.all().map(result => Ok(Json.toJson(result)))
   }
 
-  def addUser = Action(BodyParsers.parse.json) { implicit request =>
+  def addUser = Action.async(BodyParsers.parse.json) { implicit request =>
     val result = request.body.validate[User]
     result.fold(
-      errors => BadRequest(JsError.toJson(errors)),
+      errors => Future {BadRequest(JsError.toJson(errors))},
       user => {
-        userDAO.insert(user).map{ user =>
-          user match {
-            case Success(_) => Ok(Json.obj("status" -> "OK"))
-            case Failure(e) => BadRequest(Json.obj("cause" -> e.getMessage))
-          }
-        }
+        userDAO.insert(user).map(_ => Ok(Json.obj("state" -> "ok"))).
+          recover {case cause => BadRequest(Json.obj("reason" -> cause.getMessage))}
       }
     )
   }
 }
+
+/**
+  * Ok(Json.obj("state" -> "ok"))
+  * BadRequest(Json.obj("reason" -> exception.getMessage))
+  */

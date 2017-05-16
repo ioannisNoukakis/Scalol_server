@@ -11,8 +11,10 @@ import javax.inject.Inject
 
 import play.api.db.slick.DatabaseConfigProvider
 import play.api.db.slick.HasDatabaseConfigProvider
+import play.api.libs.json.Json
 
 import scala.concurrent._
+import scala.util.{Failure, Success}
 
 
 class UserService @Inject() (protected val dbConfigProvider: DatabaseConfigProvider) extends HasDatabaseConfigProvider[JdbcProfile] {
@@ -22,7 +24,6 @@ class UserService @Inject() (protected val dbConfigProvider: DatabaseConfigProvi
   def all(): Future[Seq[User]] = db.run(Users.result)
 
   def insert(u: User)(implicit ec: ExecutionContext): Future[Unit] = {
-    val action = Users += u
-    db.run(action).map( _ => ())
+    db.run(Users += u).map( _ => ())
   }
 }
