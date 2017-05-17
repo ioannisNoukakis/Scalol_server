@@ -14,7 +14,8 @@ libraryDependencies ++= Seq(
   "com.typesafe.play" %% "play-slick" % "2.0.0",
   "mysql" % "mysql-connector-java" % "5.1.34",
   "com.roundeights" %% "hasher" % "1.2.0",
-  "org.mindrot" % "jbcrypt" % "0.3m")
+  "org.mindrot" % "jbcrypt" % "0.3m",
+  "com.pauldijou" %% "jwt-play-json" % "0.12.1")
 
 unmanagedResourceDirectories in Test <+=  baseDirectory ( _ /"target/web/public/test" )  
 
