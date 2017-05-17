@@ -15,12 +15,7 @@ case class User(username: String,
                 id: Option[Long] = None,
                 rank: Option[Int] = Option {0})
 
-object User {
-  implicit val userReads = Json.reads[User]
-  implicit val userWrite = Json.writes[User]
-}
-
-case class UserView(username: String,
+case class UserView(username: Option[String] = None,
                     mail: Option[String] = None,
                     password: Option[String] = None,
                     id: Option[Long] = None,

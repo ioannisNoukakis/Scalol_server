@@ -20,35 +20,28 @@ import scala.concurrent._
 
 class UserService @Inject() (protected val dbConfigProvider: DatabaseConfigProvider) extends HasDatabaseConfigProvider[JdbcProfile] {
 
-  val Users = TableQuery[UserTableDef]
+  val users = TableQuery[UserTableDef]
   val us = TableQuery[UserSesssionTableDef]
 
   def newDate() = new Date(Calendar.getInstance().getTime().getTime + 604800000)
 
-  def all(): Future[Seq[User]] = db.run(Users.take(100).result)
+  def all(): Future[Seq[User]] = db.run(users.take(100).result)
 
-  def insert(u: User)(implicit ec: ExecutionContext): Future[Unit] = {
-    db.run(Users += u).map( _ => ())
+  def insert(user: User)(implicit ec: ExecutionContext): Future[User] = {
+    val insertQuery = users returning users.map(_.id) into ((u, id) => u.copy(id = Some(id)))
+    val action = insertQuery += user
+    db.run(action)
   }
 
   def findByUserName(username: String)(implicit ec: ExecutionContext): Future[User] = {
-    db.run(Users.filter(u => u.username === username).result).map(dbObject => dbObject.head)
+    db.run(users.filter(u => u.username === username).result).map(dbObject => dbObject.head)
   }
 
-  def updateSession(user_id: Long, newSession: String)(implicit ec: ExecutionContext): Future[Unit] = {
-    val q = for { c <- us if c.user_id === user_id } yield c.expires
-    db.run(q.update(newDate())).map( _ => ())
-  }
-
-  def createNewSession(user_id: Long, newSession: String)(implicit ec: ExecutionContext): Future[Unit] = {
+  def createSession(user_id: Long, newSession: String)(implicit ec: ExecutionContext): Future[Unit] = {
     db.run(us += UserSession(java.util.UUID.randomUUID.toString, newDate(), user_id)).map( _ => ())
   }
 
-  def createOrUpdateSession(username: String, newSession: String)(implicit ec: ExecutionContext): Future[Unit] = {
-    findByUserName(username).map(user => user)
+  def userHasSession(user_id: Long)(implicit ec: ExecutionContext): Future[Unit] = {
+    db.run(users.filter(u => u.id === user_id).result).map(dbObject => dbObject.head)
   }
 }
-
-/**
-  *
-  */
