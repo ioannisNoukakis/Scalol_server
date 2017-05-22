@@ -10,6 +10,11 @@ PATCH   /user/:username             controllers.UserEndpoint.patchUser(username:
 DELETE  /user/:username             controllers.UserEndpoint.deleteUser(username: String)
 POST    /auth                       controllers.UserEndpoint.auth
 
+# Post endpoint
+POST   /posts                       controllers.PostEndpoint.addPost
+GET    /posts                       controllers.PostEndpoint.getPosts
+PUT    /posts/:post_id              controllers.PostEndpoint.upvote(post_id: Long)
+
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.at(path="/public", file)
 

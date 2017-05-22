@@ -45,5 +45,6 @@ CREATE TABLE user_session(
 
 SELECT * FROM users INNER JOIN user_session AS us ON users.id = us.user_id;
 SELECT * FROM user_session;
+SELECT * FROM post;
 
 INSERT INTO users (username, mail, password, rank) VALUES ("user1", "miaw", "1234",  0);

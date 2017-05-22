@@ -38,7 +38,7 @@ class UserService @Inject() (protected val dbConfigProvider: DatabaseConfigProvi
   }
 
   def createSession(user_id: Long, newSession: String)(implicit ec: ExecutionContext): Future[Unit] = {
-    db.run(us += UserSession(java.util.UUID.randomUUID.toString, newDate(), user_id)).map( _ => ())
+    db.run(us += UserSession(newSession, newDate(), user_id)).map( _ => ())
   }
 
   def userHasSession(user_id: Long)(implicit ec: ExecutionContext): Future[Unit] = {
