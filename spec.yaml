@@ -1,0 +1,446 @@
+swagger: '2.0'
+info:
+  description: Scalol REST API specification
+  version: 1.0.0
+  title: Scalol
+tags:
+  - name: pet
+    description: Everything about your Pets
+    externalDocs:
+      description: Find out more
+      url: 'http://swagger.io'
+  - name: store
+    description: Access to Petstore orders
+  - name: user
+    description: Operations about user
+    externalDocs:
+      description: Find out more about our store
+      url: 'http://swagger.io'
+schemes:
+  - http
+paths:
+  /posts:
+    get:
+      tags:
+        - posts
+      summary: Returns last posts
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: body
+          in: body
+          description: >-
+            Current post id (last one that was fetched) and number of posts to
+            fetch
+             If body is empty, default will be used (last posts)
+             CURRENTLY ONLY DEFAULT IS AVAILABLE
+          required: false
+          schema:
+            type: object
+            properties:
+              currentPostId:
+                type: integer
+                format: int64
+              size:
+                type: integer
+                format: int32
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Post'
+        '400':
+          description: Bad request
+          schema:
+            type: object
+            properties:
+              cause:
+                type: string
+    post:
+      tags:
+        - posts
+      summary: Create a new post
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: header
+          name: token
+          description: token to be passed as a header (header's name must be "auth")
+          required: true
+          type: string
+        - name: body
+          in: body
+          description: 'New post data'
+          required: true
+          schema:
+            type: object
+            properties:
+              title:
+                type: string
+              image_path:
+                type: string
+              nsfw:
+                type: boolean
+      responses:
+        '200':
+          description: Post submitted
+          schema:
+            type: object
+            properties:
+              location:
+                type: string
+        '400':
+          description: Bad request
+          schema:
+            type: object
+            properties:
+              cause:
+                type: string
+  /auth:
+    post:
+      tags:
+        - Auth
+      summary: Logs user into the system
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          description: The user credentials
+          required: true
+          schema:
+            type: object
+            properties:
+              username:
+                type: string
+              password:
+                type: string
+      responses:
+        '200':
+          description: Json containing auth token
+          schema:
+            type: object
+            properties:
+              token:
+                type: string
+        '400':
+          description: Bad request
+          schema:
+            type: object
+            properties:
+              cause:
+                type: string
+  '/user':
+    post:
+      tags:
+        - user
+      summary: Creates a new user.
+      description: ''
+      produces:
+        - application/json
+      parameters:
+      - name: body
+        in: body
+        description: user object
+        required: true
+        schema:
+          type: object
+          properties:
+            username:
+              type: string
+            email:
+              type: string
+            password:
+              type: string
+      responses:
+        '200':
+          description: Json containing auth token
+          schema:
+            type: object
+            properties:
+              token:
+                type: string
+        '400':
+          description: Bad request
+          schema:
+            type: object
+            properties:
+              cause:
+                type: string
+    patch:
+      tags:
+        - user
+      summary: Update user
+      produces:
+        - application/json
+      parameters:
+        - in: header
+          name: token
+          description: token to be passed as a header (header's name must be "auth")
+          required: true
+          type: string
+        - in: body
+          name: body
+          description: Updated user object
+          required: true
+          schema:
+            type: object
+            properties:
+              username:
+                type: string
+              mail:
+                type: string
+              password:
+                type: string
+      responses:
+        '200':
+          description: Ok
+        '400':
+          description: Bad request
+          schema:
+            type: object
+            properties:
+              cause:
+                type: string
+    delete:
+      tags:
+        - user
+      summary: Delete user
+      description: This can only be done by the logged in user.
+      operationId: deleteUser
+      produces:
+        - application/json
+      parameters:
+        - in: header
+          name: token
+          description: token to be passed as a header (header's name must be "auth")
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Ok
+        '403':
+          description: forbidden
+          schema:
+            type: object
+            properties:
+              cause:
+                type: string
+  '/user/{username}':
+    get:
+      tags:
+        - user
+      summary: Get user's information and posts by user name
+      description: ''
+      produces:
+        - application/json
+      parameters:
+        - name: username
+          in: path
+          description: The username that needs to be fetched.
+          required: true
+          type: string
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            type: object
+            properties:
+              userView:
+                $ref: '#/definitions/UserView'
+              posts:
+                type: array
+                items:
+                  $ref: '#/definitions/Post'
+        '404':
+          description: User not found
+          schema:
+            type: object
+            properties:
+              cause:
+                type: string
+  /comments:
+    post:
+      tags:
+        - comments
+      summary: Post a new comment
+      consumes:
+        - application/json
+      parameters:
+        - name: body
+          in: body
+          description: Comment data
+          required: true
+          schema:
+            $ref: '#/definitions/Comment'
+      responses:
+        '200':
+          description: Comment submitted
+  '/comments/{postId}':
+    get:
+      tags:
+        - comments
+      produces:
+        - application/json
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          type: integer
+          format: int64
+          description: Post whose comments need to be fetched
+      responses:
+        '200':
+          description: Operation successful
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Comment'
+  /message:
+    post:
+      tags:
+        - message
+      summary: Send a new message
+      consumes:
+        - application/json
+      parameters:
+        - name: body
+          in: body
+          description: Message data
+          required: true
+          schema:
+            $ref: '#/definitions/Message'
+      responses:
+        '200':
+          description: Message sent
+    get:
+      tags:
+        - message
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: body
+          in: body
+          description: User whose messages is wanted
+          schema:
+            type: object
+            properties:
+              username:
+                type: string
+              password:
+                type: string
+      responses:
+        '200':
+          description: Operation successful
+          schema:
+            type: array
+            items:
+              type: array
+              items:
+                $ref: '#/definitions/Message'
+  /upvote:
+    put:
+      tags:
+        - posts
+      parameters:
+        - in: header
+          name: token
+          description: token to be passed as a header (header's name must be "auth")
+          required: true
+          type: string
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: Bad request
+          schema:
+            type: object
+            properties:
+              cause:
+                type: string
+  /downvote:
+    put:
+      tags:
+        - posts
+      parameters:
+        - in: header
+          name: token
+          description: token to be passed as a header (header's name must be "auth")
+          required: true
+          type: string
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: Bad request
+          schema:
+            type: object
+            properties:
+              cause:
+                type: string
+definitions:
+  Comment:
+    type: object
+    properties:
+      postId:
+        type: integer
+        format: int64
+      username:
+        type: integer
+        format: int64
+      content:
+        type: string
+  Message:
+    type: object
+    properties:
+      from:
+        type: string
+      to:
+        type: string
+      content:
+        type: string
+      sentAt:
+        type: string
+  Post:
+    type: object
+    properties:
+      id:
+        type: integer
+        format: int64
+      owner_id:
+        type: integer
+        format: int64
+      score:
+        type: integer
+        format: int64
+      title:
+        type: string
+      image_path:
+        type: string
+      nsfw:
+        type: boolean
+  UserView:
+    type: object
+    properties:
+      id:
+        type: integer
+        format: int64
+      username:
+        type: string
+      mail:
+         type: string
+      rank:
+        type: integer
+        format: int64
+      password:
+        type: string
