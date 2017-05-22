@@ -4,8 +4,8 @@ import javax.inject.Singleton
 
 import com.google.inject.Inject
 import play.api.mvc._
-import models.{User, UserView}
-import services.UserService
+import models.{CompleteUserView, User, UserView}
+import services.{PostService, UserService}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import play.api.libs.json._
@@ -20,9 +20,9 @@ import pdi.jwt.{JwtAlgorithm, JwtJson}
   * Created by lux on 16/04/2017.
   */
 @Singleton
-class UserEndpoint @Inject()(userDAO: UserService) extends Controller {
+class UserEndpoint @Inject()(userDAO: UserService, PostDAO: PostService) extends Controller {
   import models.UserView.userReads
-  import models.UserView.userWrite
+  import models.CompleteUserView.cUserWrite
 
   def addUser = Action.async(BodyParsers.parse.json) { implicit request =>
     val result = request.body.validate[UserView]
@@ -41,18 +41,30 @@ class UserEndpoint @Inject()(userDAO: UserService) extends Controller {
   }
 
   def findByUsername(username: String) = Action.async { implicit request =>
-    userDAO.findByUserName(username).map(user => {
-      Ok(Json.toJson(UserView(Option{user.username}, Option {user.mail}, None ,user.id, user.rank)))
+    userDAO.findByUserName(username).flatMap(user => {
+      PostDAO.getUserPosts(user.id.get).map(posts =>{
+        Ok(Json.toJson(CompleteUserView(UserView(Option{user.username}, Option {user.mail}, None ,user.id, user.rank),
+        posts)))
+      })
     })
-      .recover {case cause => BadRequest(Json.obj("reason" -> cause.getMessage))}
+      .recover {case cause => NotFound(Json.obj("reason" -> cause.getMessage))}
   }
 
-  def patchUser(username: String) = Action.async { implicit request =>
-    Future { Ok(Json.obj("NOT AVAILABLE" -> "NOT IMPLEMENTED YET")) }
+  def patchUser = UserAction.async(BodyParsers.parse.json) { implicit request =>
+    val result = request.body.validate[UserView]
+    result.fold(
+      errors => Future {BadRequest(JsError.toJson(errors))},
+      tmpU => {
+        userDAO.updateUser(request.userSession.user_id, tmpU.username.get, tmpU.mail.get, tmpU.password.get.sha512.hex)
+          .map(_ => Ok(Json.obj("status"->"ok")))
+          .recover {case cause => NotFound(Json.obj("reason" -> cause.getMessage))}
+      }
+    )
   }
 
-  def deleteUser(username: String) = Action.async { implicit request =>
-    Future { Ok(Json.obj("NOT AVAILABLE" -> "NOT IMPLEMENTED YET")) }
+  def deleteUser = UserAction.async { implicit request =>
+    userDAO.deleteUser(request.userSession.user_id).map(_ => Ok(Json.obj("status" -> "deleted")))
+      .recover {case cause => Forbidden(Json.obj("reason" -> cause.getMessage))}
   }
 
   def auth() = Action.async(BodyParsers.parse.json) { implicit request =>

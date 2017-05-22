@@ -13,6 +13,7 @@ CREATE TABLE users (
 
 CREATE TABLE post (
 	id BIGINT AUTO_INCREMENT,
+    title VARCHAR(100) NOT NULL,
     image_path TEXT NOT NULL,
     score BIGINT NOT NULL,
     nsfw BOOLEAN NOT NULL,

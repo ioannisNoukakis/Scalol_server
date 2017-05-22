@@ -23,13 +23,17 @@ class PostService @Inject() (protected val dbConfigProvider: DatabaseConfigProvi
     db.run(action)
   }
 
-  def all(): Future[Seq[Post]] = db.run(posts.take(100).sortBy(_.id.desc).result)
+  def all(): Future[Seq[Post]] = db.run(posts.sortBy(_.id.desc).take(100).result)
 
-  def upvote(post_id: Long)(implicit ec: ExecutionContext): Future[Unit] = {
+  def modifyScore(post_id: Long, inc: Int)(implicit ec: ExecutionContext): Future[Unit] = {
     db.run(posts.filter(p => p.id === post_id).result).map(dbObject => {
       val q = for {p <- posts if p.id === post_id} yield p.score
-      val updateAction = q.update(dbObject.head.score + 1)
+      val updateAction = q.update(dbObject.head.score + inc)
       db.run(updateAction)
     })
+  }
+
+  def getUserPosts(user_id: Long)(implicit ec: ExecutionContext):Future[Seq[Post]] = {
+    db.run(posts.filter(p => p.owner_id === user_id).result)
   }
 }

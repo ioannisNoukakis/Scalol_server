@@ -24,7 +24,8 @@ class PostEndpoint @Inject()(PostDAO: PostService) extends Controller {
     result.fold(
       errors => Future {BadRequest(JsError.toJson(errors))},
       tmpP => {
-        PostDAO.insert(new Post(tmpP.image_path, 0, tmpP.nsfw, request.userSession.user_id, None)).map(newPost => Ok(Json.obj("newId:" -> newPost.id.get)))
+        PostDAO.insert(new Post(tmpP.title, tmpP.image_path, 0, tmpP.nsfw, request.userSession.user_id, None)).map(newPost => Ok(Json.obj("location:" ->
+          ("http://nixme.ddns.net:9000/posts/" + newPost.id.get))))
           .recover{case cause => BadRequest(Json.obj("cause" -> cause.getMessage))}
       }
     )
@@ -35,7 +36,12 @@ class PostEndpoint @Inject()(PostDAO: PostService) extends Controller {
   }
 
   def upvote(post_id: Long) = UserAction.async { implicit request =>
-    PostDAO.upvote(post_id).map(_ => Ok(Json.obj("status" -> "ok")))
+    PostDAO.modifyScore(post_id, 1).map(_ => Ok(Json.obj("status" -> "ok")))
+      .recover{case cause => BadRequest(Json.obj("cause" -> cause.getMessage))}
+  }
+
+  def downvote(post_id: Long) = UserAction.async { implicit request =>
+    PostDAO.modifyScore(post_id, -1).map(_ => Ok(Json.obj("status" -> "ok")))
       .recover{case cause => BadRequest(Json.obj("cause" -> cause.getMessage))}
   }
 }

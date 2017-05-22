@@ -21,9 +21,16 @@ case class UserView(username: Option[String] = None,
                     id: Option[Long] = None,
                     rank: Option[Int] = Option {0})
 
+case class CompleteUserView(userView: UserView, posts: Seq[Post])
+
 object UserView {
   implicit val userReads = Json.reads[UserView]
   implicit val userWrite = Json.writes[UserView]
+}
+
+object CompleteUserView {
+  implicit val cUserReads = Json.reads[CompleteUserView]
+  implicit val cUserWrite = Json.writes[CompleteUserView]
 }
 
 case class UserSession(session: String,

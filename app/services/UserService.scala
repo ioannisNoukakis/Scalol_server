@@ -6,7 +6,7 @@ package services
 import java.sql.Date
 import java.util.Calendar
 
-import models.{User, UserSession, UserSesssionTableDef, UserTableDef}
+import models._
 import slick.driver.JdbcProfile
 import slick.lifted.TableQuery
 import slick.driver.MySQLDriver.api._
@@ -43,5 +43,15 @@ class UserService @Inject() (protected val dbConfigProvider: DatabaseConfigProvi
 
   def userHasSession(user_id: Long)(implicit ec: ExecutionContext): Future[Unit] = {
     db.run(users.filter(u => u.id === user_id).result).map(dbObject => dbObject.head)
+  }
+
+  def updateUser(user_id: Long, newUsername: String, newMail: String, newPassword: String)(implicit ec: ExecutionContext): Future[Unit] = {
+    val q = for {u <- users if u.id === user_id} yield (u.username, u.mail, u.password)
+    val updateAction = q.update((newUsername, newMail, newPassword))
+    db.run(updateAction).map(_ => ())
+  }
+
+  def deleteUser(user_id: Long)(implicit ec: ExecutionContext): Future[Unit] = {
+    db.run(users.filter(_.id === user_id).delete).map(_=>())
   }
 }

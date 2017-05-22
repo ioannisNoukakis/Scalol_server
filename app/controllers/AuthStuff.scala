@@ -1,7 +1,5 @@
 package controllers
 
-import javassist.tools.web.BadHttpRequest
-
 import models.{UserSession, UserSesssionTableDef}
 import pdi.jwt.{JwtAlgorithm, JwtJson}
 import play.api.Play
@@ -19,8 +17,6 @@ import scala.concurrent.{Await, Future}
   */
 
 class AuthenticatedRequest[A](val userSession: UserSession, val request: Request[A]) extends WrappedRequest[A](request)
-
-case class UuidWrapper(uuid:String)
 
 object UserAction extends ActionBuilder[AuthenticatedRequest] {
   val db = DatabaseConfigProvider.get[JdbcProfile](Play.current).db

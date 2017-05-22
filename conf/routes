@@ -6,14 +6,15 @@
 GET     /                           controllers.Application.index
 GET     /user/:username             controllers.UserEndpoint.findByUsername(username: String)
 POST    /user                       controllers.UserEndpoint.addUser
-PATCH   /user/:username             controllers.UserEndpoint.patchUser(username: String)
-DELETE  /user/:username             controllers.UserEndpoint.deleteUser(username: String)
+PATCH   /user                       controllers.UserEndpoint.patchUser
+DELETE  /user                       controllers.UserEndpoint.deleteUser
 POST    /auth                       controllers.UserEndpoint.auth
 
 # Post endpoint
 POST   /posts                       controllers.PostEndpoint.addPost
 GET    /posts                       controllers.PostEndpoint.getPosts
-PUT    /posts/:post_id              controllers.PostEndpoint.upvote(post_id: Long)
+PUT    /upvote/:post_id             controllers.PostEndpoint.upvote(post_id: Long)
+PUT    /downvote/:post_id           controllers.PostEndpoint.downvote(post_id: Long)
 
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.at(path="/public", file)
