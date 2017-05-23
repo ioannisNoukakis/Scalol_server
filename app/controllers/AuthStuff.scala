@@ -1,5 +1,8 @@
 package controllers
 
+import java.sql.Date
+import java.util.Calendar
+
 import models.{UserSession, UserSesssionTableDef}
 import pdi.jwt.{JwtAlgorithm, JwtJson}
 import play.api.Play
@@ -28,9 +31,15 @@ object UserAction extends ActionBuilder[AuthenticatedRequest] {
       val tmp = db.run(users.filter(u => u.session === (session \ "uuid").as[String]).result).map(dbObject => dbObject.head)
       val userSession = Await.result(tmp, scala.concurrent.duration.Duration.Inf)
 
+      //is usersession valid?
+      if( new Date(Calendar.getInstance().getTime().getTime).compareTo(userSession.expires)  > 0) {
+        db.run(users.filter(u => u.session === (session \ "uuid").as[String]).delete)
+        Future { Results.Forbidden(Json.obj("cause" -> "Outdated auth. Please auth again.")) }
+      }
+
       block(new AuthenticatedRequest(userSession, request))
     } catch {
-      case _ => Future {Results.BadRequest(Json.obj("cause" -> "Invalid auth"))}
+      case cause => println(cause); Future {Results.BadRequest(Json.obj("cause" -> cause.getMessage))}
     }
   }
 }

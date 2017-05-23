@@ -51,7 +51,7 @@ class UserTableDef(tag: Tag) extends Table[User](tag, "users") {
 //noinspection TypeAnnotation
 class UserSesssionTableDef(tag: Tag) extends Table[UserSession](tag, "user_session") {
   def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
-  def session = column[String]("session")
+  def session = column[String]("session", O.PrimaryKey)
   def expires = column[Date]("expires")
   def user_id = column[Long]("user_id")
   def user = foreignKey("user_session_user_fk", user_id, TableQuery[UserTableDef])(_.id, onDelete=ForeignKeyAction.Cascade)

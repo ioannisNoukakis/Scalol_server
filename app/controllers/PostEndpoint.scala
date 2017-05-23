@@ -19,13 +19,15 @@ class PostEndpoint @Inject()(PostDAO: PostService) extends Controller {
   import models.PostView.postViewReads
   import models.Post.postWrites
 
+  val MAX_UPLOAD_SIZE = 5000000 //Byte
+
   def addPost = UserAction.async(BodyParsers.parse.json) { implicit request =>
     val result = request.body.validate[PostView]
     result.fold(
       errors => Future {BadRequest(JsError.toJson(errors))},
       tmpP => {
         PostDAO.insert(new Post(tmpP.title, tmpP.image_path, 0, tmpP.nsfw, request.userSession.user_id, None)).map(newPost => Ok(Json.obj("location:" ->
-          ("http://nixme.ddns.net:9000/posts/" + newPost.id.get))))
+          ("hostname/" + newPost.id.get))))
           .recover{case cause => BadRequest(Json.obj("cause" -> cause.getMessage))}
       }
     )
@@ -43,5 +45,21 @@ class PostEndpoint @Inject()(PostDAO: PostService) extends Controller {
   def downvote(post_id: Long) = UserAction.async { implicit request =>
     PostDAO.modifyScore(post_id, -1).map(_ => Ok(Json.obj("status" -> "ok")))
       .recover{case cause => BadRequest(Json.obj("cause" -> cause.getMessage))}
+  }
+
+  def uploadPic = UserAction.async(parse.multipartFormData) { request =>
+    if (request.request.headers.get("Content-Length").get.toInt > MAX_UPLOAD_SIZE)
+      Future { BadRequest(Json.obj("status" -> "File is too big (Max size: 5'000'000 Bytes)"))}
+    else {
+      request.body.file("picture").map { picture =>
+        import java.io.File
+        val filename: String = System.nanoTime().toString
+        new File(s"/scalolUploads").mkdir()
+        picture.ref.moveTo(new File(s"/scalolUploads/$filename"))
+        Future { Ok(Json.obj("location" -> ("hostname/" + filename))) }
+      }.getOrElse {
+        Future { BadRequest(Json.obj("status" -> "something went wrong"))}
+      }
+    }
   }
 }

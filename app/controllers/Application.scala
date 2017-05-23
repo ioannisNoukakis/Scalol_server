@@ -1,8 +1,10 @@
 package controllers
-import play.api.libs.json.{Json}
+import javax.inject.Singleton
 
+import play.api.libs.json.Json
 import play.api.mvc._
 
+@Singleton
 class Application extends Controller {
 
   def index = Action {

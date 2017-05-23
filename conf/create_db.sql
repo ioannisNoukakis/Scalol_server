@@ -37,7 +37,7 @@ CREATE TABLE tag_post (
 
 CREATE TABLE user_session(
 	id BIGINT AUTO_INCREMENT,
-    session TEXT NOT NULL,
+    session VARCHAR(200) UNIQUE NOT NULL,
     expires DATE NOT NULL,
     user_id BIGINT NOT NULL,
 	CONSTRAINT user_session_pk PRIMARY KEY (id),

@@ -388,6 +388,39 @@ paths:
             properties:
               cause:
                 type: string
+                
+  /upload:
+    post:
+      tags:
+        - posts
+      parameters:
+        - in: header
+          name: token
+          description: token to be passed as a header (header's name must be "auth")
+          required: true
+          type: string
+        - in: body
+          name: body
+          description: >-
+           Just a regular file input in HTML should to the trick. 
+           The key is picture.
+           See postman example on github repo.
+          required: true
+      responses:
+        '200':
+          description: Post submitted
+          schema:
+            type: object
+            properties:
+              location:
+                type: string
+        '400':
+          description: Bad request
+          schema:
+            type: object
+            properties:
+              cause:
+                type: string
 definitions:
   Comment:
     type: object
