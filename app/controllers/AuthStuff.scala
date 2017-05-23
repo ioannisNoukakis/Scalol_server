@@ -39,6 +39,7 @@ object UserAction extends ActionBuilder[AuthenticatedRequest] {
 
       block(new AuthenticatedRequest(userSession, request))
     } catch {
+      case _: UnsupportedOperationException => Future { Results.Forbidden(Json.obj("cause" -> "Invalid auth.")) }
       case cause => println(cause); Future {Results.BadRequest(Json.obj("cause" -> cause.getMessage))}
     }
   }

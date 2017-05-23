@@ -20,6 +20,7 @@ class PostEndpoint @Inject()(PostDAO: PostService) extends Controller {
   import models.Post.postWrites
 
   val MAX_UPLOAD_SIZE = 5000000 //Byte
+  val HOSTNAME = "nixme.ddns.net:9000/"
 
   def addPost = UserAction.async(BodyParsers.parse.json) { implicit request =>
     val result = request.body.validate[PostView]
@@ -27,7 +28,7 @@ class PostEndpoint @Inject()(PostDAO: PostService) extends Controller {
       errors => Future {BadRequest(JsError.toJson(errors))},
       tmpP => {
         PostDAO.insert(new Post(tmpP.title, tmpP.image_path, 0, tmpP.nsfw, request.userSession.user_id, None)).map(newPost => Ok(Json.obj("location:" ->
-          ("hostname/" + newPost.id.get))))
+          (HOSTNAME + newPost.id.get))))
           .recover{case cause => BadRequest(Json.obj("cause" -> cause.getMessage))}
       }
     )
@@ -53,10 +54,10 @@ class PostEndpoint @Inject()(PostDAO: PostService) extends Controller {
     else {
       request.body.file("picture").map { picture =>
         import java.io.File
-        val filename: String = System.nanoTime().toString
+        val filename: String = java.util.UUID.randomUUID.toString+System.currentTimeMillis().toString
         new File(s"/scalolUploads").mkdir()
         picture.ref.moveTo(new File(s"/scalolUploads/$filename"))
-        Future { Ok(Json.obj("location" -> ("hostname/" + filename))) }
+        Future { Ok(Json.obj("location" -> (HOSTNAME + filename))) }
       }.getOrElse {
         Future { BadRequest(Json.obj("status" -> "something went wrong"))}
       }
