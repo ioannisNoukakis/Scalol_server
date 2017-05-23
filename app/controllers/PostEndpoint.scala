@@ -20,7 +20,8 @@ class PostEndpoint @Inject()(PostDAO: PostService) extends Controller {
   import models.Post.postWrites
 
   val MAX_UPLOAD_SIZE = 5000000 //Byte
-  val HOSTNAME = "nixme.ddns.net:9000/"
+  val HOSTNAME = "nixme.ddns.net/"
+  val HOSTNAME_IMAGE = "image/"
 
   def addPost = UserAction.async(BodyParsers.parse.json) { implicit request =>
     val result = request.body.validate[PostView]
@@ -57,7 +58,7 @@ class PostEndpoint @Inject()(PostDAO: PostService) extends Controller {
         val filename: String = java.util.UUID.randomUUID.toString+System.currentTimeMillis().toString
         new File(s"/scalolUploads").mkdir()
         picture.ref.moveTo(new File(s"/scalolUploads/$filename"))
-        Future { Ok(Json.obj("location" -> (HOSTNAME + filename))) }
+        Future { Ok(Json.obj("location" -> (HOSTNAME + HOSTNAME_IMAGE + filename))) }
       }.getOrElse {
         Future { BadRequest(Json.obj("status" -> "something went wrong"))}
       }
