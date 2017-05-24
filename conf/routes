@@ -13,6 +13,7 @@ POST    /auth                       controllers.UserEndpoint.auth
 # Post endpoint
 POST   /posts                       controllers.PostEndpoint.addPost
 GET    /posts                       controllers.PostEndpoint.getPosts
+GET    /posts/:post_id              controllers.PostEndpoint.findPostById(post_id: Long)
 PUT    /upvote/:post_id             controllers.PostEndpoint.upvote(post_id: Long)
 PUT    /downvote/:post_id           controllers.PostEndpoint.downvote(post_id: Long)
 POST   /upload                      controllers.PostEndpoint.uploadPic

@@ -29,7 +29,7 @@ class PostEndpoint @Inject()(PostDAO: PostService) extends Controller {
       errors => Future {BadRequest(JsError.toJson(errors))},
       tmpP => {
         PostDAO.insert(new Post(tmpP.title, tmpP.image_path, 0, tmpP.nsfw, request.userSession.user_id, None)).map(newPost => Ok(Json.obj("location:" ->
-          (HOSTNAME + newPost.id.get))))
+          (HOSTNAME + "posts/" + newPost.id.get))))
           .recover{case cause => BadRequest(Json.obj("cause" -> cause.getMessage))}
       }
     )
@@ -37,6 +37,11 @@ class PostEndpoint @Inject()(PostDAO: PostService) extends Controller {
 
   def getPosts = Action.async { implicit request =>
     PostDAO.all().map(result => Ok(Json.toJson(result.map(post => post))))
+  }
+
+  def findPostById(post_id: Long) =  Action.async { implicit request =>
+    PostDAO.findById(post_id).map(post => Ok(Json.toJson(post)))
+      .recover{case cause => NotFound(Json.obj("cause" -> "Post not found"))}
   }
 
   def upvote(post_id: Long) = UserAction.async { implicit request =>
