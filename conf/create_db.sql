@@ -44,6 +44,15 @@ CREATE TABLE user_session(
     CONSTRAINT user_session_user_fk FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+CREATE TABLE comment(
+	id BIGINT AUTO_INCREMENT,
+    username VARCHAR(30) NOT NULL,
+    post_id BIGINT NOT NULL,
+    content TEXT NOT NULL,
+    CONSTRAINT comment_pk PRIMARY KEY (id),
+	CONSTRAINT comment_post_fk FOREIGN KEY (post_id) REFERENCES post(id) ON DELETE CASCADE
+)
+
 SELECT * FROM users INNER JOIN user_session AS us ON users.id = us.user_id;
 SELECT * FROM user_session;
 SELECT * FROM post;

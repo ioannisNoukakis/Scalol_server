@@ -15,9 +15,9 @@ import scala.concurrent.Future
   * Created by lux on 22/05/2017.
   */
 @Singleton
-class PostEndpoint @Inject()(PostDAO: PostService) extends Controller {
-  import models.PostView.postViewReads
-  import models.Post.postWrites
+  class PostEndpoint @Inject()(PostDAO: PostService) extends Controller {
+    import models.PostView.postViewReads
+    import models.Post.postWrites
 
   val MAX_UPLOAD_SIZE = 5000000 //Byte
   val HOSTNAME = "nixme.ddns.net/"
