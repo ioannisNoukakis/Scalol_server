@@ -4,6 +4,7 @@ import java.sql.Date
 import java.util.Calendar
 
 import models.{UserSession, UserSesssionTableDef}
+import pdi.jwt.exceptions.JwtLengthException
 import pdi.jwt.{JwtAlgorithm, JwtJson}
 import play.api.Play
 import play.api.db.slick.DatabaseConfigProvider
@@ -39,6 +40,7 @@ object UserAction extends ActionBuilder[AuthenticatedRequest] {
 
       block(new AuthenticatedRequest(userSession, request))
     } catch {
+      case _: JwtLengthException => Future { Results.Forbidden(Json.obj("cause" -> "Invalid auth.")) }
       case _: UnsupportedOperationException => Future { Results.Forbidden(Json.obj("cause" -> "Invalid auth.")) }
       case cause => println(cause); Future {Results.BadRequest(Json.obj("cause" -> cause.getMessage))}
     }

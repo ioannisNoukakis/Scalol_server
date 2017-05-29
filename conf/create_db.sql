@@ -51,10 +51,17 @@ CREATE TABLE comment(
     content TEXT NOT NULL,
     CONSTRAINT comment_pk PRIMARY KEY (id),
 	CONSTRAINT comment_post_fk FOREIGN KEY (post_id) REFERENCES post(id) ON DELETE CASCADE
+);
+
+CREATE TABLE message(
+	id BIGINT AUTO_INCREMENT,
+    content TEXT NOT NULL,
+    viewed BOOLEAN NOT NULL,
+    user_blocked BOOLEAN NOT NULL,
+    date DATE NOT NULL, 
+	first_id BIGINT NOT NULL,
+    second_id BIGINT NOT NULL,
+    CONSTRAINT message_pk PRIMARY KEY (id),
+	CONSTRAINT message1_user_fk FOREIGN KEY (first_id) REFERENCES users(id) ON DELETE CASCADE,
+	CONSTRAINT message2_user_fk FOREIGN KEY (second_id) REFERENCES users(id) ON DELETE CASCADE
 )
-
-SELECT * FROM users INNER JOIN user_session AS us ON users.id = us.user_id;
-SELECT * FROM user_session;
-SELECT * FROM post;
-
-INSERT INTO users (username, mail, password, rank) VALUES ("user1", "miaw", "1234",  0);

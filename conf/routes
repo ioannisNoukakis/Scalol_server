@@ -2,8 +2,9 @@
 # This file defines all application routes (Higher priority routes first)
 # ~~~~
 
-# User endpoint
 GET     /                           controllers.Application.index
+
+# User endpoint
 GET     /user/:username             controllers.UserEndpoint.findByUsername(username: String)
 POST    /user                       controllers.UserEndpoint.addUser
 PATCH   /user                       controllers.UserEndpoint.patchUser
