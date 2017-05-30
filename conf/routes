@@ -2,8 +2,9 @@
 # This file defines all application routes (Higher priority routes first)
 # ~~~~
 
-# User endpoint
 GET     /                           controllers.Application.index
+
+# User endpoint
 GET     /user/:username             controllers.UserEndpoint.findByUsername(username: String)
 POST    /user                       controllers.UserEndpoint.addUser
 PATCH   /user                       controllers.UserEndpoint.patchUser
@@ -13,9 +14,14 @@ POST    /auth                       controllers.UserEndpoint.auth
 # Post endpoint
 POST   /posts                       controllers.PostEndpoint.addPost
 GET    /posts                       controllers.PostEndpoint.getPosts
-PUT    /upvote/:post_id             controllers.PostEndpoint.upvote(post_id: Long)
-PUT    /downvote/:post_id           controllers.PostEndpoint.downvote(post_id: Long)
+GET    /posts/:post_id              controllers.PostEndpoint.findPostById(post_id: Long)
+GET    /upvote/:post_id             controllers.PostEndpoint.upvote(post_id: Long)
+GET    /downvote/:post_id           controllers.PostEndpoint.downvote(post_id: Long)
 POST   /upload                      controllers.PostEndpoint.uploadPic
+
+# Comment endpoint
+POST   /comments                    controllers.CommentEndpoint.addComment
+GET    /comments/:post_id           controllers.CommentEndpoint.getComments(post_id: Long)
 
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.at(path="/public", file)

@@ -36,4 +36,8 @@ class PostService @Inject() (protected val dbConfigProvider: DatabaseConfigProvi
   def getUserPosts(user_id: Long)(implicit ec: ExecutionContext):Future[Seq[Post]] = {
     db.run(posts.filter(p => p.owner_id === user_id).result)
   }
+
+  def findById(post_id: Long)(implicit ec: ExecutionContext):Future[Post] = {
+    db.run(posts.filter(p => p.id === post_id).result).map(dbObject => dbObject.head)
+  }
 }

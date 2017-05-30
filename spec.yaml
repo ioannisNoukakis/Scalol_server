@@ -19,6 +19,7 @@ tags:
 schemes:
   - http
 paths:
+
   /posts:
     get:
       tags:
@@ -46,6 +47,7 @@ paths:
               size:
                 type: integer
                 format: int32
+      
       responses:
         '200':
           description: successful operation
@@ -102,6 +104,37 @@ paths:
             properties:
               cause:
                 type: string
+                
+  /posts/{post_id}:
+    get:
+      tags:
+        - posts
+      summary: Returns a post
+      produces:
+        - application/json
+      parameters:
+      - name: post_id
+        in: path
+        description: The post that needs to be fetched.
+        required: true
+        type: int64
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            type: object
+            properties:
+              post:
+                $ref: '#/definitions/Post'
+        '404':
+          description: post not found
+          schema:
+            type: object
+            properties:
+              cause:
+                type: string
+                  format: int32
+  
   /auth:
     post:
       tags:

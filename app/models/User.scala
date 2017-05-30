@@ -15,22 +15,24 @@ case class User(username: String,
                 id: Option[Long] = None,
                 rank: Option[Int] = Option {0})
 
-case class UserView(username: Option[String] = None,
-                    mail: Option[String] = None,
-                    password: Option[String] = None,
-                    id: Option[Long] = None,
-                    rank: Option[Int] = Option {0})
+case class CompleteUserView(user: User, posts: Seq[Post])
 
-case class CompleteUserView(userView: UserView, posts: Seq[Post])
+case class UserAuth(username: String,
+                    password: String)
 
-object UserView {
-  implicit val userReads = Json.reads[UserView]
-  implicit val userWrite = Json.writes[UserView]
+object User {
+  implicit val userReads = Json.reads[User]
+  implicit val userWrite = Json.writes[User]
 }
 
 object CompleteUserView {
   implicit val cUserReads = Json.reads[CompleteUserView]
   implicit val cUserWrite = Json.writes[CompleteUserView]
+}
+
+object UserAuth {
+  implicit val UserAuthReads = Json.reads[UserAuth]
+  implicit val UserAuthWrite = Json.writes[UserAuth]
 }
 
 case class UserSession(session: String,
