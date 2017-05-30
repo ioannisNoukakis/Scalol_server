@@ -50,16 +50,16 @@ class PostEndpoint @Inject()(PostDAO: PostService) extends Controller {
   def uploadPic = UserAction.async(parse.multipartFormData) { request =>
     if (request.request.headers.get("Content-Length").get.toInt > MAX_UPLOAD_SIZE)
       Future { BadRequest(Json.obj("status" -> "File is too big (Max size: 5'000'000 Bytes)"))}
-    else {
-      request.body.file("picture").map { picture =>
-        import java.io.File
-        val filename: String = System.nanoTime().toString
-        new File(s"/scalolUploads").mkdir()
-        picture.ref.moveTo(new File(s"/scalolUploads/$filename"))
-        Future { Ok(Json.obj("location" -> ("hostname/" + filename))) }
-      }.getOrElse {
-        Future { BadRequest(Json.obj("status" -> "something went wrong"))}
-      }
+    else request.body.file("picture").map { picture =>
+      import java.io.File
+      import java.util.concurrent.TimeUnit
+      val millis: Long = TimeUnit.MILLISECONDS.convert(microsecs, TimeUnit.MICROSECONDS)
+      val filename: String = System.nanoTime().toString
+      new File(s"/scalolUploads").mkdir()
+      picture.ref.moveTo(new File(s"/scalolUploads/$filename"))
+      Future { Ok(Json.obj("location" -> ("hostname/" + filename))) }
+    }.getOrElse {
+      Future { BadRequest(Json.obj("status" -> "something went wrong"))}
     }
   }
 }
