@@ -43,5 +43,5 @@ class MessageTableDef(tag: Tag) extends Table[Message](tag, "message") {
   def first = foreignKey("message1_user_fk", first_id, TableQuery[UserTableDef])(_.id, onDelete=ForeignKeyAction.Cascade)
   def second = foreignKey("message2_user_fk", second_id, TableQuery[UserTableDef])(_.id, onDelete=ForeignKeyAction.Cascade)
 
-  def * = (content, user_blocked, viewed, date, first_id, second_id, id.?) <> ((Message.apply _).tupled, Message.unapply)
+  def * = (content, viewed, user_blocked, date, first_id, second_id, id.?) <> ((Message.apply _).tupled, Message.unapply)
 }

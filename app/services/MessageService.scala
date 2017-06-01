@@ -34,4 +34,13 @@ class MessageService @Inject() (protected val dbConfigProvider: DatabaseConfigPr
   def isUserBlocked(user_1: Long, user_2: Long)(implicit ec: ExecutionContext): Future[Option[Message]] = {
     db.run(messages.filter(m => m.first_id === user_1 && m.second_id === user_2 || m.first_id === user_2 && m.second_id === user_1).result.headOption)
   }
+
+  def updateViewed(user_1: Long, user_2: Long)(implicit ec: ExecutionContext): Future[Unit] = {
+    val q = for {m <- messages
+                 if( m.first_id === user_1 && m.second_id === user_2 && m.viewed === false
+                 || m.first_id === user_2 && m.second_id === user_1 &&  m.viewed === false)
+    } yield m.viewed
+    val updateAction = q.update(true)
+    db.run(updateAction).map(_ => ())
+  }
 }

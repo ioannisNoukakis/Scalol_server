@@ -51,4 +51,31 @@ class MessageEndpoint @Inject()(MessageDAO: MessageService, UserDAO: UserService
     })
       .recover { case cause => NotFound(Json.obj("reason" -> cause.getMessage)) }
   }
+
+  def blockUser(username: String) = UserAction.async { implicit request =>
+    UserDAO.findByUserName(username).flatMap(u => {
+      MessageDAO.updateBlockFromUser(request.userSession.user_id, u.id.get, true).map( _ => {
+        Ok(Json.obj("status" -> "user blocked."))
+      })
+    })
+      .recover { case cause => NotFound(Json.obj("reason" -> cause.getMessage)) }
+  }
+
+  def unblockUser(username: String) = UserAction.async { implicit request =>
+    UserDAO.findByUserName(username).flatMap(u => {
+      MessageDAO.updateBlockFromUser(request.userSession.user_id, u.id.get, false).map( _ => {
+        Ok(Json.obj("status" -> "user unblocked."))
+      })
+    })
+      .recover { case cause => NotFound(Json.obj("reason" -> cause.getMessage)) }
+  }
+
+  def markAsRead(to_username: String) = UserAction.async { implicit request =>
+    UserDAO.findByUserName(to_username).flatMap(u => {
+      MessageDAO.updateViewed(request.userSession.user_id, u.id.get).map( _ => {
+        Ok(Json.obj("status" -> "Messages marked as read."))
+      })
+    })
+      .recover { case cause => NotFound(Json.obj("reason" -> cause.getMessage)) }
+  }
 }
