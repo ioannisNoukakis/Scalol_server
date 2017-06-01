@@ -13,7 +13,7 @@ POST    /auth                       controllers.UserEndpoint.auth
 
 # Post endpoint
 POST   /posts                       controllers.PostEndpoint.addPost
-GET    /posts                       controllers.PostEndpoint.getPosts
+GET    /posts                       controllers.PostEndpoint.getPosts(offset: Option[Long], number: Option[Long])
 GET    /posts/:post_id              controllers.PostEndpoint.findPostById(post_id: Long)
 GET    /upvote/:post_id             controllers.PostEndpoint.upvote(post_id: Long)
 GET    /downvote/:post_id           controllers.PostEndpoint.downvote(post_id: Long)
@@ -22,6 +22,10 @@ POST   /upload                      controllers.PostEndpoint.uploadPic
 # Comment endpoint
 POST   /comments                    controllers.CommentEndpoint.addComment
 GET    /comments/:post_id           controllers.CommentEndpoint.getComments(post_id: Long)
+
+# Message endpoint
+POST   /messages/:to_username       controllers.MessageEndpoint.addMessage(to_username: String)
+GET    /messages/:from_username     controllers.MessageEndpoint.addMessage(from_username: String)
 
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.at(path="/public", file)

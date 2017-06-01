@@ -1,6 +1,6 @@
 package services
 
-import models.{Post, PostTableDef, User}
+import models.{Post, PostTableDef}
 import slick.driver.JdbcProfile
 import slick.lifted.TableQuery
 import slick.driver.MySQLDriver.api._
@@ -23,7 +23,10 @@ class PostService @Inject() (protected val dbConfigProvider: DatabaseConfigProvi
     db.run(action)
   }
 
-  def all(): Future[Seq[Post]] = db.run(posts.sortBy(_.id.desc).take(100).result)
+  def all(offset: Long, number: Long): Future[Seq[Post]] = offset match {
+    case -1 => db.run(posts.sortBy(_.id.desc).take(number).result)
+    case _ => db.run(posts.sortBy(_.id.desc).filter(p => p.id <= offset).take(number).result)
+  }
 
   def modifyScore(post_id: Long, inc: Int)(implicit ec: ExecutionContext): Future[Unit] = {
     db.run(posts.filter(p => p.id === post_id).result).map(dbObject => {

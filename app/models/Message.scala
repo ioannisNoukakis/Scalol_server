@@ -22,8 +22,7 @@ case class MessageFrom(from: String,
                        viewed: Boolean,
                        user_blocked: Boolean)
 
-case class MessageTo(to: String,
-                     content: String)
+case class MessageTo(content: String)
 
 object MessageFrom {
   implicit val messageWrites = Json.writes[MessageFrom]

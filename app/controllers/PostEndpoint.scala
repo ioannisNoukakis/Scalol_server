@@ -38,8 +38,8 @@ class PostEndpoint @Inject()(PostDAO: PostService) extends Controller {
     )
   }
 
-  def getPosts = Action.async { implicit request =>
-    PostDAO.all().map(result => Ok(Json.toJson(result.map(post => post))))
+  def getPosts(offset: Option[Long], number: Option[Long]) = Action.async { implicit request =>
+    PostDAO.all(offset.getOrElse(-1), number.getOrElse(100)).map(result => Ok(Json.toJson(result.map(post => post))))
   }
 
   def findPostById(post_id: Long) = Action.async { implicit request =>

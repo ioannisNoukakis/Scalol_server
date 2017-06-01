@@ -32,7 +32,7 @@ class MessageService @Inject() (protected val dbConfigProvider: DatabaseConfigPr
   }
 
   def isUserBlocked(user_1: Long, user_2: Long)(implicit ec: ExecutionContext): Future[Boolean] = {
-    db.run(messages.filter(m => m.first_id === user_1 && m.second_id === user_2 || m.first_id === user_2 && m.second_id === user_1).result.head)
-      .map(message => message.user_blocked)
+    db.run(messages.filter(m => m.first_id === user_1 && m.second_id === user_2 || m.first_id === user_2 && m.second_id === user_1).result.headOption)
+      .map(message => message.get.user_blocked)
   }
 }

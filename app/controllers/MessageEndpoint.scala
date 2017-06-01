@@ -29,14 +29,14 @@ class MessageEndpoint @Inject()(MessageDAO: MessageService, UserDAO: UserService
         BadRequest(JsError.toJson(errors))
       },
       tmpM => {
-        UserDAO.findByUserName(tmpM.to).flatMap(u => {
+        UserDAO.findByUserName(to_username).flatMap(u => {
           MessageDAO.isUserBlocked(request.userSession.user_id, u.id.get).flatMap(blocked => blocked match {
             case true => Future {Forbidden(Json.obj("cause" -> "This user has blocked you."))}
             case false => MessageDAO.insert(Message(tmpM.content, false, false, new Date(Calendar.getInstance().getTime().getTime), request.userSession.user_id, u.id.get, None))
               .map(_ => Ok(Json.obj("state" -> "ok")))
           })
         })
-          .recover { case cause => NotFound(Json.obj("reason" -> cause.getMessage)) }
+          .recover { case cause => cause.printStackTrace();NotFound(Json.obj("reason" -> cause.getMessage)) }
       }
     )
   }

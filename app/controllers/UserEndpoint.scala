@@ -34,7 +34,7 @@ class UserEndpoint @Inject()(userDAO: UserService, PostDAO: PostService) extends
         BadRequest(Json.obj("cause" -> "Your body is incomplete or wrong. See our API documentation for a correct version (API v1.0)"))
       },
       tmpU => {
-        //FIXME WE NEED A SALT TABLE / ROW ALONG THE PASSWORD
+        //FIXME WE NEED A SALT TABLE / ROW ALONG WITH THE PASSWORD
         val user: User = User(tmpU.username, tmpU.mail, (tmpU.password).sha512.hex)
         userDAO.insert(user).map(u => {
           val uuid = java.util.UUID.randomUUID.toString
