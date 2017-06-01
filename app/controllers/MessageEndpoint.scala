@@ -31,8 +31,12 @@ class MessageEndpoint @Inject()(MessageDAO: MessageService, UserDAO: UserService
       tmpM => {
         UserDAO.findByUserName(to_username).flatMap(u => {
           MessageDAO.isUserBlocked(request.userSession.user_id, u.id.get).flatMap(blocked => blocked match {
-            case true => Future {Forbidden(Json.obj("cause" -> "This user has blocked you."))}
-            case false => MessageDAO.insert(Message(tmpM.content, false, false, new Date(Calendar.getInstance().getTime().getTime), request.userSession.user_id, u.id.get, None))
+            case Some(x) => x.user_blocked match {
+              case true => Future {Forbidden(Json.obj("cause" -> "This user has blocked you."))}
+              case false => MessageDAO.insert(Message(tmpM.content, false, false, new Date(Calendar.getInstance().getTime().getTime), request.userSession.user_id, u.id.get, None))
+                .map(_ => Ok(Json.obj("state" -> "ok")))
+            }
+            case None => MessageDAO.insert(Message(tmpM.content, false, false, new Date(Calendar.getInstance().getTime().getTime), request.userSession.user_id, u.id.get, None))
               .map(_ => Ok(Json.obj("state" -> "ok")))
           })
         })
