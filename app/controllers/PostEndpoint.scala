@@ -73,7 +73,7 @@ class PostEndpoint @Inject()(PostDAO: PostService) extends Controller {
         }
       }.getOrElse {
         Future {
-          BadRequest(Json.obj("status" -> "something went wrong"))
+          BadRequest(Json.obj("status" -> "something went wrong. Did you set the key of your content to 'picture'?"))
         }
       }
     }

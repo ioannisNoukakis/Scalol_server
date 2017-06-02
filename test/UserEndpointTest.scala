@@ -19,7 +19,6 @@ class UserEndpointTest extends PlaySpec with OneServerPerSuite {
   var sharedToken2 = ""
 
   // -> POST
-
   "User Endpoint should be able to create a user" in {
     sharedUsername = "user" + System.currentTimeMillis()
     val data = Json.obj(
@@ -147,7 +146,7 @@ class UserEndpointTest extends PlaySpec with OneServerPerSuite {
     assert(response.body == "{\"cause\":\"Your body is incomplete or wrong. See our API documentation for a correct version (API v1.0)\"}")
   }
 
-  //DELETE
+  // -> DELETE
   "User Endpoint should not be able to delete a user with an invalid token header" in {
     val response = await(wsClient.url(URL).withHeaders(("Content-Type","application/json"), ("auth","wqgweg")).delete())
     response.status mustBe FORBIDDEN
