@@ -3,6 +3,7 @@ package controllers
 import javax.inject.Singleton
 
 import com.google.inject.Inject
+import com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException
 import models.Comment
 import play.api.libs.json.{JsError, Json}
 import play.api.mvc.{Action, BodyParsers, Controller}
@@ -16,17 +17,25 @@ import scala.concurrent.Future
   */
 @Singleton
 class CommentEndpoint @Inject()(CommentDAO: CommentService, UserDAO: UserService) extends Controller {
+
   import models.Comment.commentReads
   import models.Comment.commentWrites
 
   def addComment = UserAction.async(BodyParsers.parse.json) { implicit request =>
     val result = request.body.validate[Comment]
     result.fold(
-      errors => Future {BadRequest(JsError.toJson(errors))},
+      errors => Future {
+        BadRequest(Json.obj("cause" -> "Your body is incomplete or wrong. See our API documentation for a correct version (API v1.0)"))
+      },
       tmpC => {
         UserDAO.findById(request.userSession.user_id).flatMap(u => {
-          CommentDAO.insert(new Comment(tmpC.post_id, tmpC.content, Option { u.username }, None)).map(newPost => Ok(Json.obj("status:" -> "OK")))
-            .recover { case cause => BadRequest(Json.obj("cause" -> cause.getMessage)) }
+          CommentDAO.insert(new Comment(tmpC.post_id, tmpC.content, Option {
+            u.username
+          }, None)).map(newPost => Ok(Json.obj("status:" -> "OK")))
+            .recover {
+              case _:MySQLIntegrityConstraintViolationException => NotFound(Json.obj("cause" -> "Nonexistent post."))
+              case cause => BadRequest(Json.obj("cause" -> cause.getMessage))
+            }
         })
       }
     )
@@ -34,6 +43,6 @@ class CommentEndpoint @Inject()(CommentDAO: CommentService, UserDAO: UserService
 
   def getComments(post_id: Long) = Action.async { implicit request =>
     CommentDAO.getByPostId(post_id).map(result => Ok(Json.toJson(result)))
-      .recover{case cause => BadRequest(Json.obj("cause" -> cause.getMessage))}
+      .recover { case cause => BadRequest(Json.obj("cause" -> cause.getMessage)) }
   }
 }
