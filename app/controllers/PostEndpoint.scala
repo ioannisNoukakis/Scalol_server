@@ -71,7 +71,15 @@ class PostEndpoint @Inject()(PostDAO: PostService) extends Controller {
     else {
       request.body.file("picture").map { picture =>
         import java.io.File
-        val filename: String = java.util.UUID.randomUUID.toString + System.currentTimeMillis().toString
+        var extention = ""
+        picture.contentType match {
+          case None => Future{ BadRequest(Json.obj("cause" -> "This content type is not supported.")) }
+          case Some("image/jpeg") => extention = ".jpg"
+          case Some("image/png") => extention = ".png"
+          case Some("image/gif") => extention = ".gif"
+          case _ => Future{ BadRequest(Json.obj("cause" -> "This content type is not supported.")) }
+        }
+        val filename: String = java.util.UUID.randomUUID.toString + System.currentTimeMillis().toString + extention
         new File(s"/scalolUploads").mkdir()
         picture.ref.moveTo(new File(s"/scalolUploads/$filename"))
         Future {
@@ -79,7 +87,7 @@ class PostEndpoint @Inject()(PostDAO: PostService) extends Controller {
         }
       }.getOrElse {
         Future {
-          BadRequest(Json.obj("status" -> "something went wrong. Did you set the key of your content to 'picture'?"))
+          BadRequest(Json.obj("cause" -> "something went wrong. Did you set the key of your content to 'picture'?"))
         }
       }
     }
