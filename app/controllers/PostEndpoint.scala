@@ -83,7 +83,7 @@ class PostEndpoint @Inject()(PostDAO: PostService) extends Controller {
         new File(s"/scalolUploads").mkdir()
         picture.ref.moveTo(new File(s"/scalolUploads/$filename"))
         Future {
-          Ok(Json.obj("location" -> (HOSTNAME + HOSTNAME_IMAGE + filename)))
+          Ok(Json.obj("location" -> ("http://" + HOSTNAME + HOSTNAME_IMAGE + filename)))
         }
       }.getOrElse {
         Future {
