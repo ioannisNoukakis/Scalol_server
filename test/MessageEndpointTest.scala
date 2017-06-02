@@ -42,4 +42,10 @@ class MessageEndpointTest extends PlaySpec with OneServerPerSuite {
     assert(response.body.startsWith("{\"token\":"))
     sharedToken2 = response.body.split("[{}\":]")(5)
   }
+
+  //POST /messages
+  "Message endpoint should be able to create a conversassion" in {
+
+    assert(false)
+  }
 }
