@@ -73,11 +73,11 @@ class PostEndpoint @Inject()(PostDAO: PostService) extends Controller {
         import java.io.File
         var extention = ""
         picture.contentType match {
-          case None => Future{ BadRequest(Json.obj("cause" -> "This content type is not supported.")) }
+          case None => Future{ BadRequest(Json.obj("cause" -> "You need to specify a content type.")) }
           case Some("image/jpeg") => extention = ".jpg"
           case Some("image/png") => extention = ".png"
           case Some("image/gif") => extention = ".gif"
-          case _ => Future{ BadRequest(Json.obj("cause" -> "This content type is not supported.")) }
+          case _ => Future{ BadRequest(Json.obj("cause" -> "This content type is not supported. Only jpeg, png or gif are allowed.")) }
         }
         val filename: String = java.util.UUID.randomUUID.toString + System.currentTimeMillis().toString + extention
         new File(s"/scalolUploads").mkdir()

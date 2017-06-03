@@ -99,7 +99,10 @@ class UserEndpoint @Inject()(userDAO: UserService, PostDAO: PostService) extends
             Ok(Json.obj("token" -> JwtJson.encode(Json.obj("uuid" -> uuid), "secret", JwtAlgorithm.HS512)))
           }
           case false => Forbidden(Json.obj("cause" -> "Invalid password or username"))
-        }).recover { case cause => BadRequest(Json.obj("reason" -> cause.getMessage)) }
+        }).recover {
+          case _: UnsupportedOperationException => Forbidden(Json.obj("reason" -> "Invalid password or username"))
+          case cause => BadRequest(Json.obj("reason" -> cause.getMessage))
+        }
       }
     )
   }
