@@ -25,6 +25,10 @@ object PostView {
   implicit val postViewWrites = Json.writes[PostView]
 }
 
+case class UserUpvotes(inc: Boolean,
+                      post_id: Long,
+                      user_id: Long)
+
 class PostTableDef(tag: Tag) extends Table[Post](tag, "post") {
   def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
   def title = column[String]("title")
@@ -35,4 +39,14 @@ class PostTableDef(tag: Tag) extends Table[Post](tag, "post") {
   def user = foreignKey("user_post_fk", owner_id, TableQuery[UserTableDef])(_.id, onDelete=ForeignKeyAction.Cascade)
 
   def * = (title, image_path, score, nsfw, owner_id, id.?) <> ((Post.apply _).tupled, Post.unapply)
+}
+
+class UserUpvotesTableDef(tag: Tag) extends Table[UserUpvotes](tag, "user_upvote") {
+  def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
+  def inc = column[Boolean]("inc")
+  def user_id = column[Long]("user_id")
+  def post_id = column[Long]("post_id")
+  def user = foreignKey("user_session_user_fk", user_id, TableQuery[UserTableDef])(_.id, onDelete=ForeignKeyAction.Cascade)
+
+  def * = (inc, user_id, post_id) <> ((UserUpvotes.apply _).tupled, UserUpvotes.unapply)
 }

@@ -44,6 +44,16 @@ CREATE TABLE user_session(
     CONSTRAINT user_session_user_fk FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+CREATE TABLE user_upvote(
+	id BIGINT AUTO_INCREMENT,
+    inc BOOLEAN NOT NULL,
+    user_id BIGINT NOT NULL,
+    post_id BIGINT NOT NULL,
+	CONSTRAINT user_upvote_pk PRIMARY KEY (id),
+    CONSTRAINT user_upvote_user_fk FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT user_upvote_post_fk FOREIGN KEY (post_id) REFERENCES post(id) ON DELETE CASCADE
+);
+
 CREATE TABLE comment(
 	id BIGINT AUTO_INCREMENT,
     username VARCHAR(30) NOT NULL,

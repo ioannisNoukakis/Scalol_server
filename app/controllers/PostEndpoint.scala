@@ -48,7 +48,10 @@ class PostEndpoint @Inject()(PostDAO: PostService) extends Controller {
   }
 
   def upvote(post_id: Long) = UserAction.async { implicit request =>
-    PostDAO.modifyScore(post_id, 1).map(_ => Ok(Json.obj("status" -> "ok")))
+    PostDAO.updateUserAndPostUpvotesOrFalse(post_id, request.userSession.user_id, 1).flatMap(a => a match {
+      case true => PostDAO.modifyScore(post_id, 1).map(_ => Ok(Json.obj("status" -> "ok")))
+      case false => Future {Forbidden(Json.obj("cause" -> "You have already upvoted this post."))}
+    })
       .recover {
         case _: UnsupportedOperationException => NotFound(Json.obj("cause" -> "Nonexistent post."))
         case cause => BadRequest(Json.obj("cause" -> cause.getMessage))
@@ -56,7 +59,10 @@ class PostEndpoint @Inject()(PostDAO: PostService) extends Controller {
   }
 
   def downvote(post_id: Long) = UserAction.async { implicit request =>
-    PostDAO.modifyScore(post_id, -1).map(_ => Ok(Json.obj("status" -> "ok")))
+    PostDAO.updateUserAndPostUpvotesOrFalse(post_id, request.userSession.user_id, -1).flatMap(a => a match {
+      case true => PostDAO.modifyScore(post_id, -1).map(_ => Ok(Json.obj("status" -> "ok")))
+      case false => Future  {Forbidden(Json.obj("cause" -> "You have already upvoted this post."))}
+    })
       .recover {
         case _: UnsupportedOperationException => NotFound(Json.obj("cause" -> "Nonexistent post."))
         case cause => BadRequest(Json.obj("cause" -> cause.getMessage))
