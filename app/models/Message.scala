@@ -15,6 +15,7 @@ case class Message(content: String,
                    first_id: Long,
                    second_id: Long,
                    id: Option[Long])
+            extends BaseModel(id)
 
 case class MessageFrom(from: String,
                        content: String,
@@ -32,8 +33,8 @@ object MessageTo {
   implicit val messageReads = Json.reads[MessageTo]
 }
 
-class MessageTableDef(tag: Tag) extends Table[Message](tag, "message") {
-  def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
+class MessageTableDef(tag: Tag) extends BaseModelTableDef[Message](tag, "message") {
+  override def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
   def content = column[String]("content")
   def viewed = column[Boolean]("viewed")
   def user_blocked = column[Boolean]("user_blocked")

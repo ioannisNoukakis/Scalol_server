@@ -93,7 +93,7 @@ class CommentEndpointTest extends PlaySpec with OneServerPerSuite {
   "Comments endpoint should not be able to retrive comments from an nonexistant post" in {
     val response = await(wsClient.url(URL + "/-1")
       .get())
-    response.status mustBe OK
-    assert(response.body == "[]")
+    println(response.body)
+    response.status mustBe NOT_FOUND
   }
 }

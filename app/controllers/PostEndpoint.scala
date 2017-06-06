@@ -31,7 +31,7 @@ class PostEndpoint @Inject()(PostDAO: PostService) extends Controller {
         BadRequest(Json.obj("cause" -> "Your body is incomplete or wrong. See our API documentation for a correct version (API v1.0)"))
       },
       tmpP => {
-        PostDAO.insert(new Post(tmpP.title, tmpP.image_path, 0, tmpP.nsfw, request.userSession.user_id, None)).map(newPost => Ok(Json.obj("location:" ->
+        PostDAO.addPost(new Post(tmpP.title, tmpP.image_path, 0, tmpP.nsfw, request.userSession.user_id, None)).map(newPost => Ok(Json.obj("location:" ->
           (HOSTNAME + "posts/" + newPost.id.get))))
           .recover { case cause => BadRequest(Json.obj("cause" -> cause.getMessage)) }
       }

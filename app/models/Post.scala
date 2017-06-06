@@ -12,6 +12,7 @@ case class Post(title: String,
                 nsfw: Boolean,
                 owner_id: Long,
                 id: Option[Long])
+            extends BaseModel(id)
 
 object Post {
   implicit val postReads = Json.reads[Post]
@@ -29,8 +30,8 @@ case class UserUpvotes(inc: Boolean,
                       post_id: Long,
                       user_id: Long)
 
-class PostTableDef(tag: Tag) extends Table[Post](tag, "post") {
-  def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
+class PostTableDef(tag: Tag) extends BaseModelTableDef[Post](tag, "post") {
+  override def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
   def title = column[String]("title")
   def image_path = column[String]("image_path")
   def score = column[Long]("score")

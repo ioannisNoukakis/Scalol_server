@@ -12,8 +12,9 @@ import slick.driver.MySQLDriver.api._
 case class User(username: String,
                 mail: String,
                 password: String,
-                id: Option[Long] = None,
-                rank: Option[Int] = Option {0})
+                id: Option[Long],
+                rank: Option[Int] = Some(0))
+            extends BaseModel(id)
 
 case class CompleteUserView(user: User, posts: Seq[Post])
 
@@ -40,8 +41,8 @@ case class UserSession(session: String,
                        user_id: Long)
 
 //noinspection TypeAnnotation
-class UserTableDef(tag: Tag) extends Table[User](tag, "users") {
-  def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
+class UserTableDef(tag: Tag) extends BaseModelTableDef[User](tag, "users") {
+  override def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
   def username = column[String]("username", O.PrimaryKey)
   def mail = column[String]("mail")
   def password = column[String]("password")
