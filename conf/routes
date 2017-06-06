@@ -29,6 +29,7 @@ GET    /messages/:from_username     controllers.MessageEndpoint.getMessages(from
 GET    /block_user/:username        controllers.MessageEndpoint.blockUser(username: String)
 GET    /unblock_user/:username      controllers.MessageEndpoint.unblockUser(username: String)
 GET    /mark_as_read/:username      controllers.MessageEndpoint.markAsRead(username: String)
+GET    /connect                     controllers.MessageEndpoint.chat
 
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.at(path="/public", file)

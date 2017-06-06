@@ -48,7 +48,7 @@ class CommentEndpoint @Inject()(CommentDAO: CommentService, UserDAO: UserService
           case "empty.head" => Ok("[]")
           case _ => NotFound(Json.obj("cause" -> "Nonexistent post"))
         }
-        case cause => print(cause.getClass); BadRequest(Json.obj("cause" -> cause.getMessage))
+        case cause => BadRequest(Json.obj("cause" -> cause.getMessage))
       }
   }
 }

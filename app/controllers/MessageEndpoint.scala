@@ -4,9 +4,12 @@ import java.sql.Date
 import java.util.Calendar
 import javax.inject.Singleton
 
+import akka.actor.ActorSystem
+import akka.stream.Materializer
 import com.google.inject.Inject
-import models.{Message, MessageFrom, MessageTo}
-import play.api.mvc.{BodyParsers, Controller}
+import models._
+import play.api.mvc._
+import play.api.libs.streams._
 import services.{MessageService, UserService}
 import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.json.{JsError, Json}
@@ -17,7 +20,7 @@ import scala.concurrent.Future
   * Created by durza9390 on 28.05.2017.
   */
 @Singleton
-class MessageEndpoint @Inject()(MessageDAO: MessageService, UserDAO: UserService) extends Controller  {
+class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: UserService, system: ActorSystem, materializer: Materializer) extends Controller  {
 
   import models.MessageFrom.messageWrites
   import models.MessageTo.messageReads
@@ -34,7 +37,9 @@ class MessageEndpoint @Inject()(MessageDAO: MessageService, UserDAO: UserService
             case Some(x) => x.user_blocked match {
               case true => Future {Forbidden(Json.obj("cause" -> "This user has blocked you."))}
               case false => MessageDAO.insert(Message(tmpM.content, false, false, new Date(Calendar.getInstance().getTime().getTime), request.userSession.user_id, u.id.get, None))
-                .map(_ => Ok(Json.obj("state" -> "ok")))
+                .map(_ => {
+                  Ok(Json.obj("state" -> "ok"))
+                })
             }
             case None => MessageDAO.insert(Message(tmpM.content, false, false, new Date(Calendar.getInstance().getTime().getTime), request.userSession.user_id, u.id.get, None))
               .map(_ => Ok(Json.obj("state" -> "ok")))
@@ -77,5 +82,9 @@ class MessageEndpoint @Inject()(MessageDAO: MessageService, UserDAO: UserService
       })
     })
       .recover { case cause => NotFound(Json.obj("reason" -> cause.getMessage)) }
+  }
+
+  def chat = WebSocket.accept[String, String] { request =>
+    ActorFlow.actorRef(out => ChatRoom.props(out, "a", "a"))
   }
 }

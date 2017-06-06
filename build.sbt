@@ -17,7 +17,9 @@ libraryDependencies ++= Seq(
   "com.roundeights" %% "hasher" % "1.2.0",
   "org.mindrot" % "jbcrypt" % "0.3m",
   "com.pauldijou" %% "jwt-play-json" % "0.12.1",
-  "org.scalatestplus.play" %% "scalatestplus-play" % "1.5.0" % "test")
+  "org.scalatestplus.play" %% "scalatestplus-play" % "1.5.0" % "test",
+  "com.typesafe.akka" %% "akka-cluster" % "2.4.0",
+  "com.typesafe.akka" %% "akka-cluster-tools" % "2.4.0")
 
 unmanagedResourceDirectories in Test <+=  baseDirectory ( _ /"target/web/public/test" )  
 
