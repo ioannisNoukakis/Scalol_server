@@ -44,7 +44,10 @@ class CommentEndpoint @Inject()(CommentDAO: CommentService, UserDAO: UserService
   def getComments(post_id: Long) = Action.async { implicit request =>
     CommentDAO.findById(post_id).map(result => Ok(Json.toJson(result)))
       .recover {
-        case _:UnsupportedOperationException => NotFound(Json.obj("cause" -> "Nonexistent post"))
+        case c:UnsupportedOperationException =>c.getMessage match{
+          case "empty.head" => Ok("[]")
+          case _ => NotFound(Json.obj("cause" -> "Nonexistent post"))
+        }
         case cause => print(cause.getClass); BadRequest(Json.obj("cause" -> cause.getMessage))
       }
   }
