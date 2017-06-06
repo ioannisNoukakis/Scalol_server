@@ -31,21 +31,19 @@ class PostService @Inject()(protected val dbConfigProvider: DatabaseConfigProvid
   }
 
   def updateUserAndPostUpvotesOrFalse(post_id: Long, user_id: Long, inc: Int)(implicit ec: ExecutionContext): Future[Boolean] = {
-    db.run(usersUpvotes.filter(p => p.post_id === post_id && p.user_id === user_id).result.headOption).map {
+    db.run(usersUpvotes.filter(p => p.post_id === post_id && p.user_id === user_id).result.headOption).flatMap(a => a match{
       case Some(x) => {
         if (inc == 1 && !x.inc || inc == -1 && x.inc) {
           val q = for {p <- usersUpvotes if p.post_id === post_id && p.user_id === user_id} yield p.inc
-          db.run(q.update(inc == 1).map(_ => ()))
-          true
+          db.run(q.update(inc == 1)).map(_ => true)
         }
         else
-          false
+          Future { false }
       }
       case None => {
-        db.run(usersUpvotes += UserUpvotes(inc == 1, post_id, user_id)).map(_ => ())
-        true
+        db.run((usersUpvotes += UserUpvotes(inc == 1, post_id, user_id))).map(_ => (true))
       }
-    }
+    })
   }
 
   def modifyScore(post_id: Long, inc: Int)(implicit ec: ExecutionContext): Future[Unit] = {
