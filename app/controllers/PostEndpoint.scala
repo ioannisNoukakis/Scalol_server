@@ -6,7 +6,7 @@ import com.google.inject.Inject
 import models.{Post, PostView}
 import play.api.libs.json.{JsError, Json}
 import play.api.mvc.{Action, BodyParsers, Controller}
-import services.PostService
+import services.{PostService, UserService}
 import play.api.libs.concurrent.Execution.Implicits._
 
 import scala.concurrent.Future
@@ -15,7 +15,7 @@ import scala.concurrent.Future
   * Created by lux on 22/05/2017.
   */
 @Singleton
-class PostEndpoint @Inject()(PostDAO: PostService) extends Controller {
+class PostEndpoint @Inject()(PostDAO: PostService, UserDAO : UserService) extends Controller {
 
   import models.PostView.postViewReads
   import models.Post.postWrites
@@ -27,12 +27,15 @@ class PostEndpoint @Inject()(PostDAO: PostService) extends Controller {
   def addPost = UserAction.async(BodyParsers.parse.json) { implicit request =>
     val result = request.body.validate[PostView]
     result.fold(
-      errors => Future {
+      _ => Future {
         BadRequest(Json.obj("cause" -> "Your body is incomplete or wrong. See our API documentation for a correct version (API v1.0)"))
       },
       tmpP => {
-        PostDAO.insert(new Post(tmpP.title, tmpP.image_path, 0, tmpP.nsfw, request.userSession.user_id, None)).map(newPost => Ok(Json.obj("location:" ->
-          (HOSTNAME + "posts/" + newPost.id.get))))
+        UserDAO.findById(request.userSession.user_id).flatMap(user => {
+          PostDAO.addPost(new Post(tmpP.title, tmpP.image_path, 0, tmpP.nsfw, request.userSession.user_id, None)).map(newPost =>
+            Ok(Json.obj("location:" -> (HOSTNAME + "posts/" + newPost.id.get),
+              "owner: " -> user.username)))
+        })
           .recover { case cause => BadRequest(Json.obj("cause" -> cause.getMessage)) }
       }
     )

@@ -18,27 +18,21 @@ import play.api.db.slick.HasDatabaseConfigProvider
 import scala.concurrent._
 
 
-class UserService @Inject() (protected val dbConfigProvider: DatabaseConfigProvider) extends HasDatabaseConfigProvider[JdbcProfile] {
+class UserService @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) extends CommonService[User, UserTableDef] {
 
-  val users = TableQuery[UserTableDef]
+  override protected val table: TableQuery[UserTableDef] = TableQuery[UserTableDef]
   val us = TableQuery[UserSesssionTableDef]
 
   def newDate() = new Date(Calendar.getInstance().getTime().getTime + 604800000)
 
-  def all(): Future[Seq[User]] = db.run(users.take(100).result)
-
-  def insert(user: User)(implicit ec: ExecutionContext): Future[User] = {
-    val insertQuery = users returning users.map(_.id) into ((u, id) => u.copy(id = Some(id)))
+  def addUser(user: User)(implicit ec: ExecutionContext): Future[User] = {
+    val insertQuery = table returning table.map(_.id) into ((u, id) => u.copy(id = Some(id)))
     val action = insertQuery += user
     db.run(action)
   }
 
   def findByUserName(username: String)(implicit ec: ExecutionContext): Future[User] = {
-    db.run(users.filter(u => u.username === username).result).map(dbObject => dbObject.head)
-  }
-
-  def findById(user_id: Long)(implicit ec: ExecutionContext): Future[User] = {
-    db.run(users.filter(u => u.id === user_id).result).map(dbObject => dbObject.head)
+    db.run(table.filter(u => u.username === username).result).map(dbObject => dbObject.head)
   }
 
   def createSession(user_id: Long, newSession: String)(implicit ec: ExecutionContext): Future[Unit] = {
@@ -46,16 +40,6 @@ class UserService @Inject() (protected val dbConfigProvider: DatabaseConfigProvi
   }
 
   def userHasSession(user_id: Long)(implicit ec: ExecutionContext): Future[Unit] = {
-    db.run(users.filter(u => u.id === user_id).result).map(dbObject => dbObject.head)
-  }
-
-  def updateUser(user_id: Long, newUsername: String, newMail: String, newPassword: String)(implicit ec: ExecutionContext): Future[Unit] = {
-    val q = for {u <- users if u.id === user_id} yield (u.username, u.mail, u.password)
-    val updateAction = q.update((newUsername, newMail, newPassword))
-    db.run(updateAction).map(_ => ())
-  }
-
-  def deleteUser(user_id: Long)(implicit ec: ExecutionContext): Future[Unit] = {
-    db.run(users.filter(_.id === user_id).delete).map(_=>())
+    db.run(table.filter(u => u.id === user_id).result).map(dbObject => dbObject.head)
   }
 }

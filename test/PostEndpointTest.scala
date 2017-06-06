@@ -40,6 +40,7 @@ class PostEndpointTest extends PlaySpec with OneServerPerSuite {
       .post(data))
     response.status mustBe OK
     assert(response.body.startsWith("{\"location:\":\"nixme.ddns.net/posts/"))
+    assert(response.body.endsWith("\"owner: \":\"" + sharedUsername + "\"}"))
   }
 
   "Post Endpoint should not be able to create a post if json is incomplete" in {

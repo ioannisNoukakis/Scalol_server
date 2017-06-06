@@ -35,8 +35,8 @@ class UserEndpoint @Inject()(userDAO: UserService, PostDAO: PostService) extends
       },
       tmpU => {
         //FIXME WE NEED A SALT TABLE / ROW ALONG WITH THE PASSWORD
-        val user: User = User(tmpU.username, tmpU.mail, (tmpU.password).sha512.hex)
-        userDAO.insert(user).map(u => {
+        val user: User = User(tmpU.username, tmpU.mail, (tmpU.password).sha512.hex, None, None)
+        userDAO.addUser(user).map(u => {
           val uuid = java.util.UUID.randomUUID.toString
           userDAO.createSession(u.id.get, uuid).map(_ => ())
           Ok(Json.obj("token" -> JwtJson.encode(Json.obj(("uuid", uuid)), "secret", JwtAlgorithm.HS512)))
@@ -66,14 +66,14 @@ class UserEndpoint @Inject()(userDAO: UserService, PostDAO: PostService) extends
   def patchUser = UserAction.async(BodyParsers.parse.json) { implicit request =>
     val result = request.body.validate[User]
     result.fold(
-      errors => Future {
+      _ => Future {
         BadRequest(Json.obj("cause" -> "Your body is incomplete or wrong. See our API documentation for a correct version (API v1.0)"))
       },
       tmpU => {
-        userDAO.updateUser(request.userSession.user_id, tmpU.username, tmpU.mail, tmpU.password.sha512.hex)
+        userDAO.update(request.userSession.user_id, User(tmpU.username, tmpU.mail, tmpU.password.sha512.hex, Some(request.userSession.user_id), Some(0)))
           .map(_ => Ok(Json.obj("status" -> "ok")))
           .recover {
-            case _: MySQLIntegrityConstraintViolationException => Conflict(Json.obj("cause" -> "Username already taken."))
+            case e: MySQLIntegrityConstraintViolationException => e.printStackTrace(); Conflict(Json.obj("cause" -> "Username already taken."))
             case cause => BadRequest(Json.obj("reason" -> cause.getMessage))
           }
       }
@@ -81,14 +81,14 @@ class UserEndpoint @Inject()(userDAO: UserService, PostDAO: PostService) extends
   }
 
   def deleteUser = UserAction.async { implicit request =>
-    userDAO.deleteUser(request.userSession.user_id).map(_ => Ok(Json.obj("status" -> "deleted")))
+    userDAO.delete(request.userSession.user_id).map(_ => Ok(Json.obj("status" -> "deleted")))
       .recover { case cause => Forbidden(Json.obj("reason" -> cause.getMessage)) }
   }
 
   def auth() = Action.async(BodyParsers.parse.json) { implicit request =>
     val result = request.body.validate[UserAuth]
     result.fold(
-      errors => Future {
+      _ => Future {
         BadRequest(Json.obj("cause" -> "Your body is incomplete or wrong. See our API documentation for a correct version (API v1.0)"))
       },
       tmpU => {
@@ -101,7 +101,7 @@ class UserEndpoint @Inject()(userDAO: UserService, PostDAO: PostService) extends
           case false => Forbidden(Json.obj("cause" -> "Invalid password or username"))
         }).recover {
           case _: UnsupportedOperationException => Forbidden(Json.obj("reason" -> "Invalid password or username"))
-          case cause => BadRequest(Json.obj("reason" -> cause.getMessage))
+          case cause => BadRequest(Json.obj("cause" -> cause.getMessage))
         }
       }
     )
