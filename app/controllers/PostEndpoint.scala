@@ -48,7 +48,10 @@ class PostEndpoint @Inject()(PostDAO: PostService) extends Controller {
   }
 
   def upvote(post_id: Long) = UserAction.async { implicit request =>
-    PostDAO.modifyScore(post_id, 1).map(_ => Ok(Json.obj("status" -> "ok")))
+    PostDAO.updateUserAndPostUpvotesOrFalse(post_id, request.userSession.user_id, 1).flatMap(a => a match {
+      case true => PostDAO.modifyScore(post_id, 1).map(_ => Ok(Json.obj("status" -> "ok")))
+      case false => Future {Forbidden(Json.obj("cause" -> "You have already upvoted this post."))}
+    })
       .recover {
         case _: UnsupportedOperationException => NotFound(Json.obj("cause" -> "Nonexistent post."))
         case cause => BadRequest(Json.obj("cause" -> cause.getMessage))
@@ -56,7 +59,10 @@ class PostEndpoint @Inject()(PostDAO: PostService) extends Controller {
   }
 
   def downvote(post_id: Long) = UserAction.async { implicit request =>
-    PostDAO.modifyScore(post_id, -1).map(_ => Ok(Json.obj("status" -> "ok")))
+    PostDAO.updateUserAndPostUpvotesOrFalse(post_id, request.userSession.user_id, -1).flatMap(a => a match {
+      case true => PostDAO.modifyScore(post_id, -1).map(_ => Ok(Json.obj("status" -> "ok")))
+      case false => Future  {Forbidden(Json.obj("cause" -> "You have already upvoted this post."))}
+    })
       .recover {
         case _: UnsupportedOperationException => NotFound(Json.obj("cause" -> "Nonexistent post."))
         case cause => BadRequest(Json.obj("cause" -> cause.getMessage))
@@ -71,15 +77,23 @@ class PostEndpoint @Inject()(PostDAO: PostService) extends Controller {
     else {
       request.body.file("picture").map { picture =>
         import java.io.File
-        val filename: String = java.util.UUID.randomUUID.toString + System.currentTimeMillis().toString
+        var extention = ""
+        picture.contentType match {
+          case None => Future{ BadRequest(Json.obj("cause" -> "You need to specify a content type.")) }
+          case Some("image/jpeg") => extention = ".jpg"
+          case Some("image/png") => extention = ".png"
+          case Some("image/gif") => extention = ".gif"
+          case _ => Future{ BadRequest(Json.obj("cause" -> "This content type is not supported. Only jpeg, png or gif are allowed.")) }
+        }
+        val filename: String = java.util.UUID.randomUUID.toString + System.currentTimeMillis().toString + extention
         new File(s"/scalolUploads").mkdir()
         picture.ref.moveTo(new File(s"/scalolUploads/$filename"))
         Future {
-          Ok(Json.obj("location" -> (HOSTNAME + HOSTNAME_IMAGE + filename)))
+          Ok(Json.obj("location" -> ("http://" + HOSTNAME + HOSTNAME_IMAGE + filename)))
         }
       }.getOrElse {
         Future {
-          BadRequest(Json.obj("status" -> "something went wrong"))
+          BadRequest(Json.obj("cause" -> "something went wrong. Did you set the key of your content to 'picture'?"))
         }
       }
     }

@@ -60,3 +60,4 @@ class UserSesssionTableDef(tag: Tag) extends Table[UserSession](tag, "user_sessi
 
   def * = (session, expires, user_id) <> ((UserSession.apply _).tupled, UserSession.unapply)
 }
+

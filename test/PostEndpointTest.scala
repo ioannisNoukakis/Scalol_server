@@ -98,6 +98,13 @@ class PostEndpointTest extends PlaySpec with OneServerPerSuite {
     response.status mustBe OK
   }
 
+  "Post Endpoint should not be able to upvote a specific post twice" in {
+    val response = await(wsClient.url(s"http://$publicAddress" + "/upvote/1")
+      .withHeaders(("auth", sharedToken))
+      .get())
+    response.status mustBe FORBIDDEN
+  }
+
   "Post Endpoint should not be able to upvote a specific post if it does not exists" in {
     val response = await(wsClient.url(s"http://$publicAddress" + "/upvote/-1")
       .withHeaders(("auth", sharedToken))
