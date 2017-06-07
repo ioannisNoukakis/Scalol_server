@@ -8,19 +8,21 @@ import akka.actor.ActorSystem
 import akka.stream.Materializer
 import com.google.inject.Inject
 import models._
+import pdi.jwt.{JwtAlgorithm, JwtJson}
+import pdi.jwt.exceptions.JwtLengthException
 import play.api.mvc._
 import play.api.libs.streams._
-import services.{MessageService, UserService}
+import services.{AuthService, MessageService, UserService}
 import play.api.libs.concurrent.Execution.Implicits._
-import play.api.libs.json.{JsError, Json}
+import play.api.libs.json.{JsError, JsObject, Json}
 
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 
 /**
   * Created by durza9390 on 28.05.2017.
   */
 @Singleton
-class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: UserService, system: ActorSystem, materializer: Materializer) extends Controller  {
+class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: UserService, authService: AuthService, system: ActorSystem, materializer: Materializer) extends Controller  {
 
   import models.MessageFrom.messageWrites
   import models.MessageTo.messageReads
@@ -45,7 +47,7 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
               .map(_ => Ok(Json.obj("state" -> "ok")))
           })
         })
-          .recover { case cause => cause.printStackTrace();NotFound(Json.obj("reason" -> cause.getMessage)) }
+          .recover { case cause => NotFound(Json.obj("reason" -> cause.getMessage)) }
       }
     )
   }
@@ -85,6 +87,9 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
   }
 
   def chat = WebSocket.accept[String, String] { request =>
-    ActorFlow.actorRef(out => ChatRoom.props(out, "a", "a"))
+    val t = authService.verifyToken(request.headers.get("auth").get).map(u => {
+      ActorFlow.actorRef(out => ChatRoom.props(out, u.username, request.headers.get("to").get))
+    })
+    Await.result(t, scala.concurrent.duration.Duration.Inf)
   }
 }
