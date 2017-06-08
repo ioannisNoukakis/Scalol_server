@@ -53,8 +53,9 @@ class PostEndpoint @Inject()(PostDAO: PostService, UserDAO : UserService) extend
   def upvote(post_id: Long) = UserAction.async { implicit request =>
     PostDAO.findById(post_id).flatMap(_ => {
       PostDAO.updateUserAndPostUpvotesOrFalse(post_id, request.userSession.user_id, 1).flatMap(a => a match {
-        case true => PostDAO.modifyScore(post_id, 1).map(_ => Ok(Json.obj("status" -> "ok")))
-        case false => Future {
+        case (true, true) => PostDAO.modifyScore(post_id, 2).map(_ => Ok(Json.obj("status" -> "ok")))
+        case (true, false) => PostDAO.modifyScore(post_id, 1).map(_ => Ok(Json.obj("status" -> "ok")))
+        case (false, false) => Future {
           Forbidden(Json.obj("cause" -> "You have already upvoted this post."))
         }
       })
@@ -68,8 +69,9 @@ class PostEndpoint @Inject()(PostDAO: PostService, UserDAO : UserService) extend
   def downvote(post_id: Long) = UserAction.async { implicit request =>
     PostDAO.findById(post_id).flatMap(_ => {
       PostDAO.updateUserAndPostUpvotesOrFalse(post_id, request.userSession.user_id, -1).flatMap(a => a match {
-        case true => PostDAO.modifyScore(post_id, -1).map(_ => Ok(Json.obj("status" -> "ok")))
-        case false => Future {
+        case (true, true) => PostDAO.modifyScore(post_id, -2).map(_ => Ok(Json.obj("status" -> "ok")))
+        case (true, false) => PostDAO.modifyScore(post_id, -1).map(_ => Ok(Json.obj("status" -> "ok")))
+        case (false, false) => Future {
           Forbidden(Json.obj("cause" -> "You have already upvoted this post."))
         }
       })

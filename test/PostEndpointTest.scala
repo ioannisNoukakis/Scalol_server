@@ -14,6 +14,8 @@ class PostEndpointTest extends PlaySpec with OneServerPerSuite {
   var sharedUsername = ""
   var sharedToken = ""
 
+  var post_id = -1
+
   "Given an auth user" in {
     sharedUsername = "user" + System.currentTimeMillis()
     val data = Json.obj(
@@ -41,6 +43,7 @@ class PostEndpointTest extends PlaySpec with OneServerPerSuite {
     response.status mustBe OK
     assert(response.body.startsWith("{\"location:\":\"nixme.ddns.net/posts/"))
     assert(response.body.endsWith("\"owner: \":\"" + sharedUsername + "\"}"))
+    post_id = response.body.split("[{}\":]")(6).split("/")(2).toInt
   }
 
   "Post Endpoint should not be able to create a post if json is incomplete" in {
@@ -79,7 +82,7 @@ class PostEndpointTest extends PlaySpec with OneServerPerSuite {
 
   //GET    /posts/:post_id
   "Post Endpoint should be able to get a specific post" in {
-    val response = await(wsClient.url(URL+"/1")
+    val response = await(wsClient.url(URL+"/" +post_id)
       .get())
     response.status mustBe OK
     assert(!response.body.isEmpty)
@@ -93,14 +96,14 @@ class PostEndpointTest extends PlaySpec with OneServerPerSuite {
 
   //get    /upvote/:post_id
   "Post Endpoint should be able to upvote a specific post" in {
-    val response = await(wsClient.url(s"http://$publicAddress" + "/upvote/1")
+    val response = await(wsClient.url(s"http://$publicAddress" + "/upvote/" + post_id)
       .withHeaders(("auth", sharedToken))
       .get())
     response.status mustBe OK
   }
 
   "Post Endpoint should not be able to upvote a specific post twice" in {
-    val response = await(wsClient.url(s"http://$publicAddress" + "/upvote/1")
+    val response = await(wsClient.url(s"http://$publicAddress" + "/upvote/" + post_id)
       .withHeaders(("auth", sharedToken))
       .get())
     response.status mustBe FORBIDDEN
@@ -116,7 +119,7 @@ class PostEndpointTest extends PlaySpec with OneServerPerSuite {
 
   //PUT    /downvote/:post_id
   "Post Endpoint should be able to downvote a specific post" in {
-    val response = await(wsClient.url(s"http://$publicAddress" + "/downvote/1")
+    val response = await(wsClient.url(s"http://$publicAddress" + "/downvote/" + post_id)
       .withHeaders(("auth", sharedToken))
       .get())
     response.status mustBe OK
