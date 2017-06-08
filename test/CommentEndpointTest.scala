@@ -94,6 +94,7 @@ class CommentEndpointTest extends PlaySpec with OneServerPerSuite {
     val response = await(wsClient.url(URL + "/-1")
       .get())
     println(response.body)
-    response.status mustBe NOT_FOUND
+    response.status mustBe OK
+    assert(response.body == "[]")
   }
 }

@@ -32,7 +32,7 @@ class UserService @Inject()(protected val dbConfigProvider: DatabaseConfigProvid
   }
 
   def findByUserName(username: String)(implicit ec: ExecutionContext): Future[User] = {
-    db.run(table.filter(u => u.username === username).result).map(dbObject => dbObject.head)
+    db.run(table.filter(_.username === username).result).map(dbObject => dbObject.head)
   }
 
   def createSession(user_id: Long, newSession: String)(implicit ec: ExecutionContext): Future[Unit] = {
