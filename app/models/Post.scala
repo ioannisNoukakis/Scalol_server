@@ -49,5 +49,5 @@ class UserUpvotesTableDef(tag: Tag) extends Table[UserUpvotes](tag, "user_upvote
   def post_id = column[Long]("post_id")
   def user = foreignKey("user_session_user_fk", user_id, TableQuery[UserTableDef])(_.id, onDelete=ForeignKeyAction.Cascade)
 
-  def * = (inc, user_id, post_id) <> ((UserUpvotes.apply _).tupled, UserUpvotes.unapply)
+  def * = (inc, post_id, user_id) <> ((UserUpvotes.apply _).tupled, UserUpvotes.unapply)
 }
