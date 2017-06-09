@@ -6,6 +6,7 @@ GET     /                           controllers.Application.index
 
 # User endpoint
 GET     /user/:username             controllers.UserEndpoint.findByUsername(username: String)
+GET     /userbyid/:user_id          controllers.UserEndpoint.findById(user_id: Long)
 POST    /user                       controllers.UserEndpoint.addUser
 PATCH   /user                       controllers.UserEndpoint.patchUser
 DELETE  /user                       controllers.UserEndpoint.deleteUser

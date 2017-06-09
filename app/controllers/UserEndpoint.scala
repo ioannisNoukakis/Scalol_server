@@ -63,6 +63,20 @@ class UserEndpoint @Inject()(userDAO: UserService, PostDAO: PostService) extends
       .recover { case cause => NotFound(Json.obj("cause" -> "The following user does not exists.")) }
   }
 
+  def findById(user_id: Long) = Action.async { implicit request =>
+    userDAO.findById(user_id).flatMap(user => {
+      PostDAO.getUserPosts(user.id.get).map(posts => {
+        Ok(Json.toJson(CompleteUserView(User(
+          user.username
+          ,
+          user.mail
+          , null, user.id, user.rank),
+          posts)))
+      })
+    })
+      .recover { case cause => NotFound(Json.obj("cause" -> "The following user does not exists.")) }
+  }
+
   def patchUser = UserAction.async(BodyParsers.parse.json) { implicit request =>
     val result = request.body.validate[User]
     result.fold(

@@ -3,7 +3,7 @@ package controllers
 import javax.inject.Singleton
 
 import com.google.inject.Inject
-import models.{Post, PostView}
+import models.{Post, PostPartial}
 import play.api.libs.json.{JsError, Json}
 import play.api.mvc.{Action, BodyParsers, Controller}
 import services.{PostService, UserService}
@@ -17,7 +17,7 @@ import scala.concurrent.Future
 @Singleton
 class PostEndpoint @Inject()(PostDAO: PostService, UserDAO : UserService) extends Controller {
 
-  import models.PostView.postViewReads
+  import models.PostPartial.postViewReads
   import models.Post.postWrites
 
   val MAX_UPLOAD_SIZE = 5000000 //Byte
@@ -25,7 +25,7 @@ class PostEndpoint @Inject()(PostDAO: PostService, UserDAO : UserService) extend
   val HOSTNAME_IMAGE = "image/"
 
   def addPost = UserAction.async(BodyParsers.parse.json) { implicit request =>
-    val result = request.body.validate[PostView]
+    val result = request.body.validate[PostPartial]
     result.fold(
       _ => Future {
         BadRequest(Json.obj("cause" -> "Your body is incomplete or wrong. See our API documentation for a correct version (API v1.0)"))
@@ -52,13 +52,13 @@ class PostEndpoint @Inject()(PostDAO: PostService, UserDAO : UserService) extend
 
   def upvote(post_id: Long) = UserAction.async { implicit request =>
     PostDAO.findById(post_id).flatMap(_ => {
-      PostDAO.updateUserAndPostUpvotesOrFalse(post_id, request.userSession.user_id, 1).flatMap(a => a match {
+      PostDAO.updateUserAndPostUpvotesOrFalse(post_id, request.userSession.user_id, 1).flatMap {
         case (true, true) => PostDAO.modifyScore(post_id, 2).map(_ => Ok(Json.obj("status" -> "ok")))
         case (true, false) => PostDAO.modifyScore(post_id, 1).map(_ => Ok(Json.obj("status" -> "ok")))
         case (false, false) => Future {
           Forbidden(Json.obj("cause" -> "You have already upvoted this post."))
         }
-      })
+      }
     })
       .recover {
         case _: UnsupportedOperationException => NotFound(Json.obj("cause" -> "Nonexistent post."))

@@ -19,11 +19,11 @@ object Post {
   implicit val postWrites = Json.writes[Post]
 }
 
-case class PostView (title: String, image_path: String, nsfw: Boolean)
+case class PostPartial(title: String, image_path: String, nsfw: Boolean)
 
-object PostView {
-  implicit val postViewReads = Json.reads[PostView]
-  implicit val postViewWrites = Json.writes[PostView]
+object PostPartial {
+  implicit val postViewReads = Json.reads[PostPartial]
+  implicit val postViewWrites = Json.writes[PostPartial]
 }
 
 case class UserUpvotes(inc: Boolean,
