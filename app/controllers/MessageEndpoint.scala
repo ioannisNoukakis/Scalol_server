@@ -25,6 +25,7 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
 
   import models.MessageFrom.messageWrites
   import models.MessageTo.messageReads
+  import models.MessageBox.messageBoxWrties
 
   def addMessage(to_username: String) = UserAction.async(BodyParsers.parse.json) { implicit request =>
     val result = request.body.validate[MessageTo]
@@ -34,7 +35,7 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
       },
       tmpM => {
         UserDAO.findByUserName(to_username).flatMap(u => {
-          MessageDAO.isUserBlocked(request.userSession.user_id, u.id.get).flatMap(blocked => blocked match {
+          MessageDAO.isUserBlocked(request.userSession.user_id, u.id.get).flatMap {
             case Some(x) => x.user_blocked match {
               case true => Future {
                 Forbidden(Json.obj("cause" -> "This user has blocked you."))
@@ -46,11 +47,18 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
             }
             case None => MessageDAO.insert(Message(tmpM.content, false, false, new Date(Calendar.getInstance().getTime().getTime), request.userSession.user_id, u.id.get, None))
               .map(_ => Ok(Json.obj("state" -> "ok")))
-          })
+          }
         })
           .recover { case cause => NotFound(Json.obj("reason" -> cause.getMessage)) }
       }
     )
+  }
+
+  def getUserInbox() = UserAction.async { implicit request =>
+    MessageDAO.getUserMailBox(request.userSession.user_id).map(p => Ok(Json.toJson(p.map(a =>{
+      MessageBox(Await.result(UserDAO.findById(a.second_id).map(u => u.username), scala.concurrent.duration.Duration.Inf))
+    }))))
+      .recover { case cause => NotFound(Json.obj("reason" -> cause.getMessage)) }
   }
 
   def getMessagesFrom(from_username: String) = UserAction.async { implicit request =>
@@ -90,12 +98,23 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
 
   def chat(token: Option[String], to: Option[String]) = WebSocket.accept[String, String] { request =>
     try {
-      val t = authService.verifyToken(token.get).map(u => {
-        ActorFlow.actorRef(out => ChatRoom.props(out, u.username, to.get))
+      //verify token
+      val t = authService.verifyToken(token.get).flatMap(from => {
+        //get and verify correspondent
+        UserDAO.findByUserName(to.get).flatMap(to => {
+          //verify if not blocked
+          MessageDAO.isUserBlocked(from.id.get, to.id.get).flatMap {
+            case Some(x) => x.user_blocked match {
+              case true =>  Future { ActorFlow.actorRef(out => ErrorMessageActor.props(out, "This user has blocked you.")) }
+              case false => Future { ActorFlow.actorRef(out => ChatRoom.props(out, from, to)) }
+            }
+            case None => Future { ActorFlow.actorRef(out => ChatRoom.props(out, from, to)) }
+          }
+        })
       })
       Await.result(t, scala.concurrent.duration.Duration.Inf)
     } catch {
-      case _: NoSuchElementException => ActorFlow.actorRef(out => ErrorMessageActor.props(out, "Missing auth."))
+      case _: NoSuchElementException => ActorFlow.actorRef(out => ErrorMessageActor.props(out, "Missing auth or wrong correspondent."))
       case _: JwtLengthException => ActorFlow.actorRef(out => ErrorMessageActor.props(out, "Invalid auth."))
       case _: UnsupportedOperationException => ActorFlow.actorRef(out => ErrorMessageActor.props(out, "Invalid auth."))
       case cause => println(cause); ActorFlow.actorRef(out => ErrorMessageActor.props(out, cause.getMessage))

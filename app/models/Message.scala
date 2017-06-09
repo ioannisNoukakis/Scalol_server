@@ -4,6 +4,7 @@ import java.sql.Date
 
 import play.api.libs.json.Json
 import slick.driver.MySQLDriver.api._
+import slick.jdbc.GetResult
 
 /**
   * Created by durza9390 on 28.05.2017.
@@ -24,6 +25,25 @@ case class MessageFrom(from: String,
                        user_blocked: Boolean)
 
 case class MessageTo(content: String)
+
+case class MessageBox(from: String)
+
+object Message {
+  implicit val getMessageResult = GetResult(r => {
+    val id = r.nextLong()
+    val content = r.nextString()
+    val viewed = r.nextBoolean()
+    val user_blocked = r.nextBoolean()
+    val date = r.nextDate()
+    val first_id = r.nextLong()
+    val second_id = r.nextLong()
+    Message(content, viewed, user_blocked, date, first_id, second_id, Some(id))
+  })
+}
+
+object MessageBox {
+  implicit val messageBoxWrties = Json.writes[MessageBox]
+}
 
 object MessageFrom {
   implicit val messageWrites = Json.writes[MessageFrom]
