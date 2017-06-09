@@ -60,9 +60,6 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
       .recover { case cause => NotFound(Json.obj("reason" -> cause.getMessage)) }
   }
 
-  def getMessages() = UserAction.async { implicit request =>
-
-  }
 
   def blockUser(username: String) = UserAction.async { implicit request =>
     UserDAO.findByUserName(username).flatMap(u => {
