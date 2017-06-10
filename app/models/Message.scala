@@ -19,6 +19,7 @@ case class Message(content: String,
             extends BaseModel(id)
 
 case class MessageFrom(from: String,
+                       to: String,
                        content: String,
                        date: String,
                        viewed: Boolean,

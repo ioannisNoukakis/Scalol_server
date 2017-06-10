@@ -30,12 +30,12 @@ class UserEndpoint @Inject()(userDAO: UserService, PostDAO: PostService) extends
   def addUser = Action.async(BodyParsers.parse.json) { implicit request =>
     val result = request.body.validate[User]
     result.fold(
-      errors => Future {
+      _ => Future {
         BadRequest(Json.obj("cause" -> "Your body is incomplete or wrong. See our API documentation for a correct version (API v1.0)"))
       },
       tmpU => {
         //FIXME WE NEED A SALT TABLE / ROW ALONG WITH THE PASSWORD
-        val user: User = User(tmpU.username, tmpU.mail, (tmpU.password).sha512.hex, None, None)
+        val user: User = User(tmpU.username, tmpU.mail, tmpU.password.sha512.hex, None, None)
         userDAO.addUser(user).map(u => {
           val uuid = java.util.UUID.randomUUID.toString
           userDAO.createSession(u.id.get, uuid).map(_ => ())
@@ -87,8 +87,8 @@ class UserEndpoint @Inject()(userDAO: UserService, PostDAO: PostService) extends
         userDAO.update(request.userSession.user_id, User(tmpU.username, tmpU.mail, tmpU.password.sha512.hex, Some(request.userSession.user_id), Some(0)))
           .map(_ => Ok(Json.obj("status" -> "ok")))
           .recover {
-            case e: MySQLIntegrityConstraintViolationException => e.printStackTrace(); Conflict(Json.obj("cause" -> "Username already taken."))
-            case cause => BadRequest(Json.obj("reason" -> cause.getMessage))
+            case _: MySQLIntegrityConstraintViolationException => Conflict(Json.obj("cause" -> "Username already taken."))
+            case cause => cause.printStackTrace(); BadRequest(Json.obj("reason" -> cause.getMessage))
           }
       }
     )

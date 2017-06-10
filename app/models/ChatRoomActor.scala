@@ -44,6 +44,7 @@ case class ChatRoomActor(from: User, to: User, out: ActorRef) extends Actor {
       ChatRoomActor.clients.filter(_.from == to).foreach(p => {
         val future = ChatRoomActor.db.run(ChatRoomActor.messages
           += Message(msg, true, false, new Date(Calendar.getInstance().getTime().getTime), from.id.get, to.id.get, None)).map(_ => ())
+        NorificationChannelActor.clients.filter(_.user == to).foreach(_.sendNotification(from.username + " has sent you a message!"))
         println("Sending: from: " + from.username  + " to: " + to.username + " message: " + msg)
         p.out ! "[" + from.username + "]" + msg
       })
