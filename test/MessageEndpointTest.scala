@@ -14,8 +14,10 @@ class MessageEndpointTest extends PlaySpec with OneServerPerSuite {
 
   var sharedUsername = ""
   var sharedUsername2 = ""
+  var sharedUsername3 = ""
   var sharedToken = ""
   var sharedToken2 = ""
+  var sharedToken3 = ""
 
   "GIVEN a user" in {
     sharedUsername = "user" + System.currentTimeMillis()
@@ -43,8 +45,26 @@ class MessageEndpointTest extends PlaySpec with OneServerPerSuite {
     sharedToken2 = response.body.split("[{}\":]")(5)
   }
 
+  "GIVEN an other other user" in {
+    sharedUsername3 = "user" + System.currentTimeMillis()
+    val data = Json.obj(
+      "username" -> sharedUsername3,
+      "mail" -> "user.com",
+      "password" -> "mylittlepassword"
+    )
+    val response = await(wsClient.url(authURL).withHeaders(("Content-Type","application/json")).post(data))
+    response.status mustBe OK
+    assert(response.body.startsWith("{\"token\":"))
+    sharedToken3 = response.body.split("[{}\":]")(5)
+  }
+
   //POST /messages
-  "Message endpoint should be able to create a conversassion" in {
+  "User1 should be able to create a conversation with user 2" in {
+    val data = Json.obj(
+      "content" -> "test"
+    )
+    val response = await(wsClient.url(URL + "/" + sharedUsername2)
+      .withHeaders(("Content-Type","application/json"), ("auth", sharedToken)).post(data))
 
     assert(false)
   }

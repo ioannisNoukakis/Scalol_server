@@ -60,9 +60,6 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
       .recover { case cause => NotFound(Json.obj("reason" -> cause.getMessage)) }
   }
 
-  def getMessages() = UserAction.async { implicit request =>
-
-  }
 
   def blockUser(username: String) = UserAction.async { implicit request =>
     UserDAO.findByUserName(username).flatMap(u => {
@@ -98,7 +95,7 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
       })
       Await.result(t, scala.concurrent.duration.Duration.Inf)
     } catch {
-      case _: NoSuchElementException => ActorFlow.actorRef(out => ErrorMessageActor.props(out, "Missing auth."))
+      case _: NoSuchElementException => ActorFlow.actorRef(out => ErrorMessageActor.props(out, "Missing auth or userDest."))
       case _: JwtLengthException => ActorFlow.actorRef(out => ErrorMessageActor.props(out, "Invalid auth."))
       case _: UnsupportedOperationException => ActorFlow.actorRef(out => ErrorMessageActor.props(out, "Invalid auth."))
       case cause => println(cause); ActorFlow.actorRef(out => ErrorMessageActor.props(out, cause.getMessage))
