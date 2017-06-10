@@ -6,6 +6,7 @@ GET     /                           controllers.Application.index
 
 # User endpoint
 GET     /user/:username             controllers.UserEndpoint.findByUsername(username: String)
+GET     /userbyid/:user_id          controllers.UserEndpoint.findById(user_id: Long)
 POST    /user                       controllers.UserEndpoint.addUser
 PATCH   /user                       controllers.UserEndpoint.patchUser
 DELETE  /user                       controllers.UserEndpoint.deleteUser
@@ -26,7 +27,7 @@ GET    /comments/:post_id           controllers.CommentEndpoint.getComments(post
 # Message endpoint
 POST   /messages/:to_username       controllers.MessageEndpoint.addMessage(to_username: String)
 GET    /messages/:from_username     controllers.MessageEndpoint.getMessagesFrom(from_username: String)
-# GET    /messages
+GET    /messages                    controllers.MessageEndpoint.getUserInbox
 GET    /block_user/:username        controllers.MessageEndpoint.blockUser(username: String)
 GET    /unblock_user/:username      controllers.MessageEndpoint.unblockUser(username: String)
 GET    /mark_as_read/:username      controllers.MessageEndpoint.markAsRead(username: String)

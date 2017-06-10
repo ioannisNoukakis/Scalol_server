@@ -33,7 +33,7 @@ object UserAction extends ActionBuilder[AuthenticatedRequest] {
       val userSession = Await.result(tmp, scala.concurrent.duration.Duration.Inf)
 
       //is usersession valid?
-      if( new Date(Calendar.getInstance().getTime().getTime).compareTo(userSession.expires)  > 0) {
+      if( new Date(Calendar.getInstance().getTime.getTime).compareTo(userSession.expires)  > 0) {
         db.run(users.filter(u => u.session === (session \ "uuid").as[String]).delete)
         Future { Results.Forbidden(Json.obj("cause" -> "Outdated auth. Please auth again.")) }
       }
