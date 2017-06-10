@@ -23,9 +23,9 @@ import scala.concurrent.{Await, Future}
 @Singleton
 class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: UserService, authService: AuthService, system: ActorSystem, materializer: Materializer) extends Controller {
 
+  import models.MessageBox.messageBoxWrties
   import models.MessageFrom.messageWrites
   import models.MessageTo.messageReads
-  import models.MessageBox.messageBoxWrties
 
   def addMessage(to_username: String) = UserAction.async(BodyParsers.parse.json) { implicit request =>
     val result = request.body.validate[MessageTo]
@@ -42,6 +42,7 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
               }
               case false => MessageDAO.insert(Message(tmpM.content, false, false, new Date(Calendar.getInstance().getTime().getTime), request.userSession.user_id, u.id.get, None))
                 .map(_ => {
+                  NorificationChannelActor.clients.filter(_.user == u).foreach(_.sendNotification(u.username + " has sent you a message!"))
                   Ok(Json.obj("state" -> "ok"))
                 })
             }
@@ -55,7 +56,7 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
   }
 
   def getUserInbox() = UserAction.async { implicit request =>
-    MessageDAO.getUserMailBox(request.userSession.user_id).map(p => Ok(Json.toJson(p.map(a =>{
+    MessageDAO.getUserMailBox(request.userSession.user_id).map(p => Ok(Json.toJson(p.map(a => {
       MessageBox(Await.result(UserDAO.findById(a.second_id).map(u => u.username), scala.concurrent.duration.Duration.Inf))
     }))))
       .recover { case cause => NotFound(Json.obj("reason" -> cause.getMessage)) }
@@ -96,6 +97,13 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
       .recover { case cause => NotFound(Json.obj("reason" -> cause.getMessage)) }
   }
 
+  def notifyAndCreateActor(to: User, from: User) = {
+    NorificationChannelActor.clients.filter(_.user == to).foreach(_.sendNotification(from.username + " is now online!"))
+    Future {
+      ActorFlow.actorRef(out => ChatRoomActor.props(out, from, to))
+    }
+  }
+
   def chat(token: Option[String], to: Option[String]) = WebSocket.accept[String, String] { request =>
     try {
       //verify token
@@ -105,16 +113,34 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
           //verify if not blocked
           MessageDAO.isUserBlocked(from.id.get, to.id.get).flatMap {
             case Some(x) => x.user_blocked match {
-              case true =>  Future { ActorFlow.actorRef(out => ErrorMessageActor.props(out, "This user has blocked you.")) }
-              case false => Future { ActorFlow.actorRef(out => ChatRoom.props(out, from, to)) }
+              case true => Future {
+                ActorFlow.actorRef(out => ErrorMessageActor.props(out, "This user has blocked you."))
+              }
+              case false => notifyAndCreateActor(to, from)
             }
-            case None => Future { ActorFlow.actorRef(out => ChatRoom.props(out, from, to)) }
+            case None => notifyAndCreateActor(to, from)
           }
-        })
+        }
+        )
       })
       Await.result(t, scala.concurrent.duration.Duration.Inf)
-    } catch {
+    }
+    catch {
       case _: NoSuchElementException => ActorFlow.actorRef(out => ErrorMessageActor.props(out, "Missing auth or wrong correspondent."))
+      case _: JwtLengthException => ActorFlow.actorRef(out => ErrorMessageActor.props(out, "Invalid auth."))
+      case _: UnsupportedOperationException => ActorFlow.actorRef(out => ErrorMessageActor.props(out, "Invalid auth."))
+      case cause => println(cause); ActorFlow.actorRef(out => ErrorMessageActor.props(out, cause.getMessage))
+    }
+  }
+
+  def notification(token: Option[String]) = WebSocket.accept[String, String] { request =>
+    try {
+      //verify token
+      val t = authService.verifyToken(token.get).map(user =>
+        ActorFlow.actorRef(out => NorificationChannelActor.props(out, "Suscribed to notifications", user)))
+      Await.result(t, scala.concurrent.duration.Duration.Inf)
+    } catch {
+      case _: NoSuchElementException => ActorFlow.actorRef(out => ErrorMessageActor.props(out, "Missing auth"))
       case _: JwtLengthException => ActorFlow.actorRef(out => ErrorMessageActor.props(out, "Invalid auth."))
       case _: UnsupportedOperationException => ActorFlow.actorRef(out => ErrorMessageActor.props(out, "Invalid auth."))
       case cause => println(cause); ActorFlow.actorRef(out => ErrorMessageActor.props(out, cause.getMessage))
