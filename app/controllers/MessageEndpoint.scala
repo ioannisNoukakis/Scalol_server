@@ -49,23 +49,26 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
               .map(_ => Ok(Json.obj("state" -> "ok")))
           }
         })
-          .recover { case cause => NotFound(Json.obj("reason" -> cause.getMessage)) }
+          .recover { case cause => NotFound(Json.obj("cause" -> "This user does not exists.")) }
       }
     )
   }
 
   def getUserInbox() = UserAction.async { implicit request =>
     MessageDAO.getUserMailBox(request.userSession.user_id).map(p => Ok(Json.toJson(p.map(a =>{
-      MessageBox(Await.result(UserDAO.findById(a.second_id).map(u => u.username), scala.concurrent.duration.Duration.Inf))
-    }))))
-      .recover { case cause => NotFound(Json.obj("reason" -> cause.getMessage)) }
+      MessageBox(Await.result(a.first_id match {
+        case i if i == request.userSession.user_id => UserDAO.findById(a.second_id).map(u => u.username)
+        case _=> UserDAO.findById(a.first_id).map(u => u.username)
+      }, scala.concurrent.duration.Duration.Inf))
+    }).distinct)))
+      .recover { case cause => NotFound(Json.obj("cause" -> cause.getMessage)) }
   }
 
   def getMessagesFrom(from_username: String) = UserAction.async { implicit request =>
     UserDAO.findByUserName(from_username).flatMap(u => {
       MessageDAO.getLastMessages(request.userSession.user_id, u.id.get).map(r => Ok(Json.toJson(r.map(m => MessageFrom(u.username, m.content, m.date.toString, m.viewed, m.user_blocked)))))
     })
-      .recover { case cause => NotFound(Json.obj("reason" -> cause.getMessage)) }
+      .recover { case cause => NotFound(Json.obj("cause" -> cause.getMessage)) }
   }
 
 
@@ -75,7 +78,7 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
         Ok(Json.obj("status" -> "user blocked."))
       })
     })
-      .recover { case cause => NotFound(Json.obj("reason" -> cause.getMessage)) }
+      .recover { case cause => NotFound(Json.obj("cause" -> cause.getMessage)) }
   }
 
   def unblockUser(username: String) = UserAction.async { implicit request =>
@@ -84,7 +87,7 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
         Ok(Json.obj("status" -> "user unblocked."))
       })
     })
-      .recover { case cause => NotFound(Json.obj("reason" -> cause.getMessage)) }
+      .recover { case cause => NotFound(Json.obj("cause" -> cause.getMessage)) }
   }
 
   def markAsRead(to_username: String) = UserAction.async { implicit request =>
@@ -93,7 +96,7 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
         Ok(Json.obj("status" -> "Messages marked as read."))
       })
     })
-      .recover { case cause => NotFound(Json.obj("reason" -> cause.getMessage)) }
+      .recover { case cause => NotFound(Json.obj("cause" -> cause.getMessage)) }
   }
 
   def chat(token: Option[String], to: Option[String]) = WebSocket.accept[String, String] { request =>
