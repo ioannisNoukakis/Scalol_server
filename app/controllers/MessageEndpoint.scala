@@ -4,8 +4,8 @@ import java.sql.Date
 import java.util.Calendar
 import javax.inject.Singleton
 
-import WS.{ChatRoomActor, ErrorMessageActor, NorificationChannelActor}
-import akka.actor.ActorSystem
+import WS.{ChatActor, ErrorMessageActor, NotificationActor}
+import akka.actor.{ActorSystem, PoisonPill}
 import akka.stream.Materializer
 import com.google.inject.Inject
 import models._
@@ -43,7 +43,7 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
               }
               case false => MessageDAO.insert(Message(tmpM.content, false, false, new Date(Calendar.getInstance().getTime().getTime), request.user.id.get, u.id.get, None))
                 .map(_ => {
-                  NorificationChannelActor.clients.filter(_.user == u).foreach(_.sendNotification(u.username + " has sent you a message!"))
+                  NotificationActor.clients.filter(_.user == u).foreach(_.sendNotification(u.username + " has sent you a message!"))
                   Ok(Json.obj("state" -> "ok"))
                 })
             }
@@ -80,6 +80,16 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
   def blockUser(username: String) = UserAction.async { implicit request =>
     UserDAO.findByUserName(username).flatMap(u => {
       MessageDAO.updateBlockFromUser(request.user.id.get, u.id.get, true).map(_ => {
+        ChatActor.clients.filter(a => a.to == request.user && a.from == u)
+                            .foreach(a => {
+                              a.out ! "This user blocked you!"
+                              a.self ! PoisonPill
+                            })
+        ChatActor.clients.filter(a => a.from == request.user && a.to == u)
+          .foreach(a => {
+            a.out ! "User successfully blocked!"
+            a.self ! PoisonPill
+          })
         Ok(Json.obj("status" -> "user blocked."))
       })
     })
@@ -105,9 +115,9 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
   }
 
   def notifyAndCreateActor(to: User, from: User) = {
-    NorificationChannelActor.clients.filter(_.user == to).foreach(_.sendNotification(from.username + " is now online!"))
+    NotificationActor.clients.filter(_.user == to).foreach(_.sendNotification(from.username + " is now online!"))
     Future {
-      ActorFlow.actorRef(out => ChatRoomActor.props(out, from, to))
+      ActorFlow.actorRef(out => ChatActor.props(out, from, to))
     }
   }
 
@@ -145,7 +155,7 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
     try {
       //verify token
       val t = authService.verifyToken(token.get).map(user =>
-        ActorFlow.actorRef(out => NorificationChannelActor.props(out, "Suscribed to notifications", user)))
+        ActorFlow.actorRef(out => NotificationActor.props(out, "Suscribed to notifications", user)))
       Await.result(t, scala.concurrent.duration.Duration.Inf)
     } catch {
       case _: NoSuchElementException => ActorFlow.actorRef(out => ErrorMessageActor.props(out, "Missing auth"))

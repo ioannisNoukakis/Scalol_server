@@ -8,16 +8,16 @@ import scala.collection.mutable
 /**
   * Created by lux on 10.06.17.
   */
-object NorificationChannelActor{
-  var clients: mutable.Set[NorificationChannelActor] = mutable.Set()
-  def props(out: ActorRef, wellcomeMsg: String, user: User) = Props(new NorificationChannelActor(user, wellcomeMsg, out))
+object NotificationActor{
+  var clients: mutable.Set[NotificationActor] = mutable.Set()
+  def props(out: ActorRef, wellcomeMsg: String, user: User) = Props(new NotificationActor(user, wellcomeMsg, out))
 }
 
-case class NorificationChannelActor(user: User, wellcomeMsg: String, out: ActorRef) extends Actor {
+case class NotificationActor(user: User, wellcomeMsg: String, out: ActorRef) extends Actor {
 
   override def preStart() = {
     super.preStart()
-    NorificationChannelActor.clients += this
+    NotificationActor.clients += this
     out ! wellcomeMsg
   }
 
@@ -30,6 +30,6 @@ case class NorificationChannelActor(user: User, wellcomeMsg: String, out: ActorR
   }
 
   override def postStop() = {
-    NorificationChannelActor.clients -= this
+    NotificationActor.clients -= this
   }
 }
