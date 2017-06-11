@@ -3,13 +3,13 @@ package controllers
 import javax.inject.Singleton
 
 import com.google.inject.Inject
-import models.{Post, PostPartial}
+import models.{Post, PostPartial, PostView}
 import play.api.libs.json.{JsError, Json}
 import play.api.mvc.{Action, BodyParsers, Controller}
 import services.{PostService, UserService}
 import play.api.libs.concurrent.Execution.Implicits._
 
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 
 /**
   * Created by lux on 22/05/2017.
@@ -18,7 +18,7 @@ import scala.concurrent.Future
 class PostEndpoint @Inject()(PostDAO: PostService, UserDAO : UserService) extends Controller {
 
   import models.PostPartial.postViewReads
-  import models.Post.postWrites
+  import models.PostView.postWrites
 
   val MAX_UPLOAD_SIZE = 5000000 //Byte
   val HOSTNAME = "nixme.ddns.net/"
@@ -41,12 +41,17 @@ class PostEndpoint @Inject()(PostDAO: PostService, UserDAO : UserService) extend
     )
   }
 
+  def convertHelper(post: Post): PostView ={
+    val user = Await.result(UserDAO.findById(post.owner_id), scala.concurrent.duration.Duration.Inf)
+    PostView(post.title, post.image_path, post.score, post.nsfw, user.username, post.id.get)
+  }
+
   def getPosts(offset: Option[Long], number: Option[Long]) = Action.async { implicit request =>
-    PostDAO.all(offset.getOrElse(-1), number.getOrElse(100)).map(result => Ok(Json.toJson(result.map(post => post))))
+    PostDAO.all(offset.getOrElse(-1), number.getOrElse(100)).map(result => Ok(Json.toJson(result.map(post => convertHelper(post)))))
   }
 
   def findPostById(post_id: Long) = Action.async { implicit request =>
-    PostDAO.findById(post_id).map(post => Ok(Json.toJson(post)))
+    PostDAO.findById(post_id).map(post => Ok(Json.toJson(convertHelper(post))))
       .recover { case cause => NotFound(Json.obj("cause" -> "Post not found")) }
   }
 

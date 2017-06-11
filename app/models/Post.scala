@@ -14,9 +14,21 @@ case class Post(title: String,
                 id: Option[Long])
             extends BaseModel(id)
 
+case class PostView(title: String,
+                image_path: String,
+                score: Long,
+                nsfw: Boolean,
+                owner: String,
+                id:Long)
+
 object Post {
   implicit val postReads = Json.reads[Post]
   implicit val postWrites = Json.writes[Post]
+}
+
+object PostView {
+  implicit val postReads = Json.reads[PostView]
+  implicit val postWrites = Json.writes[PostView]
 }
 
 case class PostPartial(title: String, image_path: String, nsfw: Boolean)
