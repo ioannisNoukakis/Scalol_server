@@ -28,15 +28,11 @@ class CommentEndpoint @Inject()(CommentDAO: CommentService, UserDAO: UserService
         BadRequest(Json.obj("cause" -> "Your body is incomplete or wrong. See our API documentation for a correct version (API v1.0)"))
       },
       tmpC => {
-        UserDAO.findById(request.userSession.user_id).flatMap(u => {
-          CommentDAO.insert(new Comment(tmpC.post_id, tmpC.content, Option {
-            u.username
-          }, None)).map(_ => Ok(Json.obj("status:" -> "OK")))
-            .recover {
-              case _:MySQLIntegrityConstraintViolationException => NotFound(Json.obj("cause" -> "Nonexistent post."))
-              case cause => BadRequest(Json.obj("cause" -> cause.getMessage))
-            }
-        })
+        CommentDAO.insert(new Comment(tmpC.post_id, tmpC.content, Some(request.user.username), None)).map(_ => Ok(Json.obj("status:" -> "OK")))
+          .recover {
+            case _:MySQLIntegrityConstraintViolationException => NotFound(Json.obj("cause" -> "Nonexistent post."))
+            case cause => BadRequest(Json.obj("cause" -> cause.getMessage))
+          }
       }
     )
   }

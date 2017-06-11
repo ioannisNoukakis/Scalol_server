@@ -25,9 +25,9 @@ POST   /comments                    controllers.CommentEndpoint.addComment
 GET    /comments/:post_id           controllers.CommentEndpoint.getComments(post_id: Long)
 
 # Message endpoint
+GET    /messages                    controllers.MessageEndpoint.getUserInbox
 POST   /messages/:to_username       controllers.MessageEndpoint.addMessage(to_username: String)
 GET    /messages/:from_username     controllers.MessageEndpoint.getMessagesFrom(from_username: String)
-GET    /messages                    controllers.MessageEndpoint.getUserInbox
 GET    /block_user/:username        controllers.MessageEndpoint.blockUser(username: String)
 GET    /unblock_user/:username      controllers.MessageEndpoint.unblockUser(username: String)
 GET    /mark_as_read/:username      controllers.MessageEndpoint.markAsRead(username: String)

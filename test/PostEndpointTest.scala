@@ -82,14 +82,14 @@ class PostEndpointTest extends PlaySpec with OneServerPerSuite {
 
   //GET    /posts/:post_id
   "Post Endpoint should be able to get a specific post" in {
-    val response = await(wsClient.url(URL+"/" +post_id)
+    val response = await(wsClient.url(URL + "/" + post_id)
       .get())
     response.status mustBe OK
     assert(!response.body.isEmpty)
   }
 
   "Post Endpoint should not be able to get a specific post if it does not exists" in {
-    val response = await(wsClient.url(URL+"/-1")
+    val response = await(wsClient.url(URL + "/-1")
       .get())
     response.status mustBe NOT_FOUND
   }
@@ -131,11 +131,5 @@ class PostEndpointTest extends PlaySpec with OneServerPerSuite {
       .get())
     response.status mustBe NOT_FOUND
     assert(response.body == "{\"cause\":\"Nonexistent post.\"}")
-  }
-
-  //POST   /upload
-  //FIXME do this one too pls.
-  "Post Endpoint should not be able to upload a picture" in {
-    assert(false)
   }
 }

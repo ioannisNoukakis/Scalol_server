@@ -31,12 +31,9 @@ class PostEndpoint @Inject()(PostDAO: PostService, UserDAO : UserService) extend
         BadRequest(Json.obj("cause" -> "Your body is incomplete or wrong. See our API documentation for a correct version (API v1.0)"))
       },
       tmpP => {
-        UserDAO.findById(request.userSession.user_id).flatMap(user => {
-          PostDAO.addPost(new Post(tmpP.title, tmpP.image_path, 0, tmpP.nsfw, request.userSession.user_id, None)).map(newPost =>
-            Ok(Json.obj("location:" -> (HOSTNAME + "posts/" + newPost.id.get),
-              "owner: " -> user.username)))
-        })
-          .recover { case cause => BadRequest(Json.obj("cause" -> cause.getMessage)) }
+        PostDAO.addPost(new Post(tmpP.title, tmpP.image_path, 0, tmpP.nsfw, request.user.id.get, None)).map(newPost =>
+          Ok(Json.obj("location:" -> (HOSTNAME + "posts/" + newPost.id.get), "owner: " -> request.user.username)))
+        .recover { case cause => BadRequest(Json.obj("cause" -> cause.getMessage)) }
       }
     )
   }
@@ -57,7 +54,7 @@ class PostEndpoint @Inject()(PostDAO: PostService, UserDAO : UserService) extend
 
   def upvote(post_id: Long) = UserAction.async { implicit request =>
     PostDAO.findById(post_id).flatMap(_ => {
-      PostDAO.updateUserAndPostUpvotesOrFalse(post_id, request.userSession.user_id, 1).flatMap {
+      PostDAO.updateUserAndPostUpvotesOrFalse(post_id, request.user.id.get, 1).flatMap {
         case (true, true) => PostDAO.modifyScore(post_id, 2).map(_ => Ok(Json.obj("status" -> "ok")))
         case (true, false) => PostDAO.modifyScore(post_id, 1).map(_ => Ok(Json.obj("status" -> "ok")))
         case (false, false) => Future {
@@ -73,7 +70,7 @@ class PostEndpoint @Inject()(PostDAO: PostService, UserDAO : UserService) extend
 
   def downvote(post_id: Long) = UserAction.async { implicit request =>
     PostDAO.findById(post_id).flatMap(_ => {
-      PostDAO.updateUserAndPostUpvotesOrFalse(post_id, request.userSession.user_id, -1).flatMap(a => a match {
+      PostDAO.updateUserAndPostUpvotesOrFalse(post_id, request.user.id.get, -1).flatMap(a => a match {
         case (true, true) => PostDAO.modifyScore(post_id, -2).map(_ => Ok(Json.obj("status" -> "ok")))
         case (true, false) => PostDAO.modifyScore(post_id, -1).map(_ => Ok(Json.obj("status" -> "ok")))
         case (false, false) => Future {

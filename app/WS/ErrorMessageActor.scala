@@ -1,4 +1,4 @@
-package models
+package WS
 
 import akka.actor.{Actor, ActorRef, PoisonPill, Props}
 

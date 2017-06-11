@@ -1,6 +1,7 @@
-package models
+package WS
 
-import akka.actor.{Actor, ActorRef, PoisonPill, Props}
+import akka.actor.{Actor, ActorRef, Props}
+import models.User
 
 import scala.collection.mutable
 

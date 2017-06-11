@@ -112,6 +112,7 @@ class MessageEndpointTest extends PlaySpec with OneServerPerSuite {
   "User2 should be able to get a view of his messages" in {
     val response = await(wsClient.url(URL)
       .withHeaders(("auth", sharedToken2)).get())
+    val tmp = response.body
     response.status mustBe OK
     assert(response.body == "[{\"from\":\"" + sharedUsername + "\"},{\"from\":\"" + sharedUsername3 +"\"}]")
   }

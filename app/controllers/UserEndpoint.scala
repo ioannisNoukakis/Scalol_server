@@ -84,7 +84,7 @@ class UserEndpoint @Inject()(userDAO: UserService, PostDAO: PostService) extends
         BadRequest(Json.obj("cause" -> "Your body is incomplete or wrong. See our API documentation for a correct version (API v1.0)"))
       },
       tmpU => {
-        userDAO.update(request.userSession.user_id, User(tmpU.username, tmpU.mail, tmpU.password.sha512.hex, Some(request.userSession.user_id), Some(0)))
+        userDAO.update(request.user.id.get, User(tmpU.username, tmpU.mail, tmpU.password.sha512.hex, Some(request.user.id.get), Some(0)))
           .map(_ => Ok(Json.obj("status" -> "ok")))
           .recover {
             case _: MySQLIntegrityConstraintViolationException => Conflict(Json.obj("cause" -> "Username already taken."))
@@ -95,7 +95,7 @@ class UserEndpoint @Inject()(userDAO: UserService, PostDAO: PostService) extends
   }
 
   def deleteUser = UserAction.async { implicit request =>
-    userDAO.delete(request.userSession.user_id).map(_ => Ok(Json.obj("status" -> "deleted")))
+    userDAO.delete(request.user.id.get).map(_ => Ok(Json.obj("status" -> "deleted")))
       .recover { case cause => Forbidden(Json.obj("reason" -> cause.getMessage)) }
   }
 

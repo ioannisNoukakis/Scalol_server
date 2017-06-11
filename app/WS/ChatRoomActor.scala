@@ -1,18 +1,18 @@
-package models
+package WS
 
 import java.sql.Date
 import java.util.Calendar
 
-import akka.actor.{Actor, ActorRef, PoisonPill, Props}
+import akka.actor.{Actor, ActorRef, Props}
+import models._
 import play.api.Play
 import play.api.db.slick.DatabaseConfigProvider
 import slick.driver.JdbcProfile
 import slick.driver.MySQLDriver.api._
-import scala.concurrent.ExecutionContext.Implicits.global
 import slick.lifted.TableQuery
 
 import scala.collection.mutable
-import scala.reflect.internal.util.TableDef
+import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
   * Created by durza9390 on 06.06.2017.
@@ -42,9 +42,10 @@ case class ChatRoomActor(from: User, to: User, out: ActorRef) extends Actor {
   def receive = {
     case msg: String => {
       ChatRoomActor.clients.filter(_.from == to).foreach(p => {
-        val future = ChatRoomActor.db.run(ChatRoomActor.messages
-          += Message(msg, true, false, new Date(Calendar.getInstance().getTime().getTime), from.id.get, to.id.get, None)).map(_ => ())
-        NorificationChannelActor.clients.filter(_.user == to).foreach(_.sendNotification(from.username + " has sent you a message!"))
+        ChatRoomActor.db.run(ChatRoomActor.messages += Message(msg, true, false,
+          new Date(Calendar.getInstance().getTime.getTime), from.id.get, to.id.get, None)).map(_ => ())
+        NorificationChannelActor.clients.filter(_.user == to).foreach(_.sendNotification(from.username +
+          " has sent you a message!"))
         println("Sending: from: " + from.username  + " to: " + to.username + " message: " + msg)
         p.out ! "[" + from.username + "]" + msg
       })

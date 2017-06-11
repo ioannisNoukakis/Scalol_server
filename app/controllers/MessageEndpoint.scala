@@ -4,6 +4,7 @@ import java.sql.Date
 import java.util.Calendar
 import javax.inject.Singleton
 
+import WS.{ChatRoomActor, ErrorMessageActor, NorificationChannelActor}
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import com.google.inject.Inject
@@ -35,18 +36,18 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
       },
       tmpM => {
         UserDAO.findByUserName(to_username).flatMap(u => {
-          MessageDAO.isUserBlocked(request.userSession.user_id, u.id.get).flatMap {
+          MessageDAO.isUserBlocked(request.user.id.get, u.id.get).flatMap {
             case Some(x) => x.user_blocked match {
               case true => Future {
                 Forbidden(Json.obj("cause" -> "This user has blocked you."))
               }
-              case false => MessageDAO.insert(Message(tmpM.content, false, false, new Date(Calendar.getInstance().getTime().getTime), request.userSession.user_id, u.id.get, None))
+              case false => MessageDAO.insert(Message(tmpM.content, false, false, new Date(Calendar.getInstance().getTime().getTime), request.user.id.get, u.id.get, None))
                 .map(_ => {
                   NorificationChannelActor.clients.filter(_.user == u).foreach(_.sendNotification(u.username + " has sent you a message!"))
                   Ok(Json.obj("state" -> "ok"))
                 })
             }
-            case None => MessageDAO.insert(Message(tmpM.content, false, false, new Date(Calendar.getInstance().getTime().getTime), request.userSession.user_id, u.id.get, None))
+            case None => MessageDAO.insert(Message(tmpM.content, false, false, new Date(Calendar.getInstance().getTime().getTime), request.user.id.get, u.id.get, None))
               .map(_ => Ok(Json.obj("state" -> "ok")))
           }
         })
@@ -56,9 +57,9 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
   }
 
   def getUserInbox() = UserAction.async { implicit request =>
-    MessageDAO.getUserMailBox(request.userSession.user_id).map(p => Ok(Json.toJson(p.map(a =>{
+    MessageDAO.getUserMailBox(request.user.id.get).map(p => Ok(Json.toJson(p.map(a =>{
       MessageBox(Await.result(a.first_id match {
-        case i if i == request.userSession.user_id => UserDAO.findById(a.second_id).map(u => u.username)
+        case i if i == request.user.id.get => UserDAO.findById(a.second_id).map(u => u.username)
         case _=> UserDAO.findById(a.first_id).map(u => u.username)
       }, scala.concurrent.duration.Duration.Inf))
     }).distinct)))
@@ -67,12 +68,10 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
 
   def getMessagesFrom(from_username: String) = UserAction.async { implicit request =>
     UserDAO.findByUserName(from_username).flatMap(u => {
-      UserDAO.findById(request.userSession.user_id).flatMap(u2 => {
-        MessageDAO.getLastMessages(request.userSession.user_id, u.id.get).map(r => Ok(Json.toJson(r.map {
-          case m if m.first_id == u2.id.get => MessageFrom(u2.username, u.username, m.content, m.date.toString, m.viewed, m.user_blocked)
-          case m => MessageFrom(u.username, u2.username, m.content, m.date.toString, m.viewed, m.user_blocked)
-        })))
-      })
+      MessageDAO.getLastMessages(request.user.id.get, u.id.get).map(r => Ok(Json.toJson(r.map {
+        case m if m.first_id == request.user.id.get => MessageFrom(request.user.username, u.username, m.content, m.date.toString, m.viewed, m.user_blocked)
+        case m => MessageFrom(u.username, request.user.username, m.content, m.date.toString, m.viewed, m.user_blocked)
+      })))
     })
       .recover { case cause => NotFound(Json.obj("cause" -> cause.getMessage)) }
   }
@@ -80,7 +79,7 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
 
   def blockUser(username: String) = UserAction.async { implicit request =>
     UserDAO.findByUserName(username).flatMap(u => {
-      MessageDAO.updateBlockFromUser(request.userSession.user_id, u.id.get, true).map(_ => {
+      MessageDAO.updateBlockFromUser(request.user.id.get, u.id.get, true).map(_ => {
         Ok(Json.obj("status" -> "user blocked."))
       })
     })
@@ -89,7 +88,7 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
 
   def unblockUser(username: String) = UserAction.async { implicit request =>
     UserDAO.findByUserName(username).flatMap(u => {
-      MessageDAO.updateBlockFromUser(request.userSession.user_id, u.id.get, false).map(_ => {
+      MessageDAO.updateBlockFromUser(request.user.id.get, u.id.get, false).map(_ => {
         Ok(Json.obj("status" -> "user unblocked."))
       })
     })
@@ -98,7 +97,7 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
 
   def markAsRead(to_username: String) = UserAction.async { implicit request =>
     UserDAO.findByUserName(to_username).flatMap(u => {
-      MessageDAO.updateViewed(request.userSession.user_id, u.id.get).map(_ => {
+      MessageDAO.updateViewed(request.user.id.get, u.id.get).map(_ => {
         Ok(Json.obj("status" -> "Messages marked as read."))
       })
     })
@@ -135,6 +134,7 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
     }
     catch {
       case _: NoSuchElementException => ActorFlow.actorRef(out => ErrorMessageActor.props(out, "Missing auth or wrong correspondent."))
+      case _: NullPointerException => ActorFlow.actorRef(out => ErrorMessageActor.props(out, "Outdated auth"))
       case _: JwtLengthException => ActorFlow.actorRef(out => ErrorMessageActor.props(out, "Invalid auth."))
       case _: UnsupportedOperationException => ActorFlow.actorRef(out => ErrorMessageActor.props(out, "Invalid auth."))
       case cause => println(cause); ActorFlow.actorRef(out => ErrorMessageActor.props(out, cause.getMessage))
@@ -149,6 +149,7 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
       Await.result(t, scala.concurrent.duration.Duration.Inf)
     } catch {
       case _: NoSuchElementException => ActorFlow.actorRef(out => ErrorMessageActor.props(out, "Missing auth"))
+      case _: NullPointerException => ActorFlow.actorRef(out => ErrorMessageActor.props(out, "Outdated auth"))
       case _: JwtLengthException => ActorFlow.actorRef(out => ErrorMessageActor.props(out, "Invalid auth."))
       case _: UnsupportedOperationException => ActorFlow.actorRef(out => ErrorMessageActor.props(out, "Invalid auth."))
       case cause => println(cause); ActorFlow.actorRef(out => ErrorMessageActor.props(out, cause.getMessage))
