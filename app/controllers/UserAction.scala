@@ -30,7 +30,7 @@ object UserAction extends ActionBuilder[AuthenticatedRequest] {
 
   override def invokeBlock[A](request: Request[A], block: (AuthenticatedRequest[A]) => Future[Result]): Future[Result] = {
     try {
-      val session: JsObject = JwtJson.decodeJson(request.headers.get("auth").get, "secret", Seq(JwtAlgorithm.HS512)).get
+      val session: JsObject = JwtJson.decodeJson(request.headers.get("auth").get, utils.ConfConf.serverSecret, Seq(JwtAlgorithm.HS512)).get
       val tmp = db.run(userSessions.filter(u => u.session === (session \ "uuid").as[String]).result).map(dbObject => dbObject.head)
       val userSession = Await.result(tmp, scala.concurrent.duration.Duration.Inf)
 

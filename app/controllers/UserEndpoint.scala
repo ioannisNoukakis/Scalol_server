@@ -39,7 +39,7 @@ class UserEndpoint @Inject()(userDAO: UserService, PostDAO: PostService) extends
         userDAO.addUser(user).map(u => {
           val uuid = java.util.UUID.randomUUID.toString
           userDAO.createSession(u.id.get, uuid).map(_ => ())
-          Ok(Json.obj("token" -> JwtJson.encode(Json.obj(("uuid", uuid)), "secret", JwtAlgorithm.HS512)))
+          Ok(Json.obj("token" -> JwtJson.encode(Json.obj(("uuid", uuid)), utils.ConfConf.serverSecret, JwtAlgorithm.HS512)))
         })
           .recover {
             case _:MySQLIntegrityConstraintViolationException => Conflict(Json.obj("cause" -> "Username already taken."))
@@ -110,7 +110,7 @@ class UserEndpoint @Inject()(userDAO: UserService, PostDAO: PostService) extends
           case true => { //TODO MAKE THE KEY SECRECT
             val uuid = java.util.UUID.randomUUID.toString
             userDAO.createSession(user.id.get, uuid) //TODO IS VERIFICATIONS REALLY OKAY?
-            Ok(Json.obj("token" -> JwtJson.encode(Json.obj("uuid" -> uuid), "secret", JwtAlgorithm.HS512)))
+            Ok(Json.obj("token" -> JwtJson.encode(Json.obj("uuid" -> uuid), utils.ConfConf.serverSecret, JwtAlgorithm.HS512)))
           }
           case false => Forbidden(Json.obj("cause" -> "Invalid password or username"))
         }).recover {

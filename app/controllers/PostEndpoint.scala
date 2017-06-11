@@ -21,7 +21,6 @@ class PostEndpoint @Inject()(PostDAO: PostService, UserDAO : UserService) extend
   import models.PostView.postWrites
 
   val MAX_UPLOAD_SIZE = 5000000 //Byte
-  val HOSTNAME = "nixme.ddns.net/"
   val HOSTNAME_IMAGE = "image/"
 
   def addPost = UserAction.async(BodyParsers.parse.json) { implicit request =>
@@ -32,7 +31,7 @@ class PostEndpoint @Inject()(PostDAO: PostService, UserDAO : UserService) extend
       },
       tmpP => {
         PostDAO.addPost(new Post(tmpP.title, tmpP.image_path, 0, tmpP.nsfw, request.user.id.get, None)).map(newPost =>
-          Ok(Json.obj("location:" -> (HOSTNAME + "posts/" + newPost.id.get), "owner: " -> request.user.username)))
+          Ok(Json.obj("location:" -> (utils.ConfConf.serverAdress + "posts/" + newPost.id.get), "owner: " -> request.user.username)))
         .recover { case cause => BadRequest(Json.obj("cause" -> cause.getMessage)) }
       }
     )
@@ -104,7 +103,7 @@ class PostEndpoint @Inject()(PostDAO: PostService, UserDAO : UserService) extend
         new File(s"/scalolUploads").mkdir()
         picture.ref.moveTo(new File(s"/scalolUploads/$filename"))
         Future {
-          Ok(Json.obj("location" -> ("http://" + HOSTNAME + HOSTNAME_IMAGE + filename)))
+          Ok(Json.obj("location" -> (utils.ConfConf.serverAdress + HOSTNAME_IMAGE + filename)))
         }
       }.getOrElse {
         Future {
