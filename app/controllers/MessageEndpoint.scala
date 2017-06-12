@@ -57,7 +57,11 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
                 })
             }
             case None => MessageDAO.insert(Message(tmpM.content, false, false, new Date(Calendar.getInstance().getTime().getTime), request.user.id.get, u.id.get, None))
-              .map(_ => Ok(Json.obj("state" -> "ok")))
+              .map(_ => {
+                NotificationActor.clients.filter(_.user == u).foreach(_.sendNotification(request.user.username +
+                  " has sent you a message!"))
+                Ok(Json.obj("state" -> "ok"))
+              })
           }
         })
           .recover { case cause => NotFound(Json.obj("cause" -> "This user does not exists.")) }
