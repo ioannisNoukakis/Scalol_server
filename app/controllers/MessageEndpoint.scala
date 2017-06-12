@@ -52,7 +52,7 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
               }
               case false => MessageDAO.insert(Message(tmpM.content, false, false, new Date(Calendar.getInstance().getTime().getTime), request.user.id.get, u.id.get, None))
                 .map(_ => {
-                  NotificationActor.clients.filter(_.user == u).foreach(_.sendNotification(u.username + " wants to chat with you. Click here!"))
+                  NotificationActor.clients.filter(_.user == u).foreach(_.sendNotification(u.username + " sent you a message"))
                   Ok(Json.obj("state" -> "ok"))
                 })
             }
@@ -170,7 +170,7 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
     * @return a Flow[in, out, _]
     */
   def notifyAndCreateActor(to: User, from: User) = {
-    NotificationActor.clients.filter(_.user == to).foreach(_.sendNotification(from.username + " is now online!"))
+    NotificationActor.clients.filter(_.user == to).foreach(_.sendNotification(from.username + " wants to chat with you. Click here!"))
     Future {
       ActorFlow.actorRef(out => ChatActor.props(out, from, to))
     }
