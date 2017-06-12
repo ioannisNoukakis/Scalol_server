@@ -4,7 +4,7 @@ import play.api.libs.json.Json
 import slick.driver.MySQLDriver.api._
 
 /**
-  * Created by lux on 17/05/2017.
+  * Post model
   */
 case class Post(title: String,
                 image_path: String,

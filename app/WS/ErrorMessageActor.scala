@@ -3,12 +3,18 @@ package WS
 import akka.actor.{Actor, ActorRef, PoisonPill, Props}
 
 /**
-  * Created by lux on 10.06.17.
+  * Error message actor
   */
 object ErrorMessageActor{
   def props(out: ActorRef, msg: String) = Props(new ErrorMessageActor(msg, out))
 }
 
+/**
+  * Send an error messages and dies.
+  *
+  * @param msg the message
+  * @param out the websocket of the client
+  */
 case class ErrorMessageActor(msg: String, out: ActorRef) extends Actor {
 
   override def preStart() = {

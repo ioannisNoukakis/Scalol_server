@@ -16,13 +16,20 @@ import play.api.libs.json._
 
 import scala.concurrent._
 /**
-  * Created by durza9390 on 07.06.2017.
+  * AuthService for token verification in service. User in websocket message.
   */
 class AuthService @Inject() (protected val dbConfigProvider: DatabaseConfigProvider, UserDAO: UserService) extends HasDatabaseConfigProvider[JdbcProfile]{
 
   val users: TableQuery[UserTableDef] = TableQuery[UserTableDef]
   val us = TableQuery[UserSesssionTableDef]
 
+  /**
+    * Verifies the token.
+    *
+    * @param token the token to verify
+    * @return null if the token is outdated
+    *         the user otherwise
+    */
   def verifyToken(token: String): Future[User] = {
     val session: JsObject = JwtJson.decodeJson(token, utils.ConfConf.serverSecret, Seq(JwtAlgorithm.HS512)).get
     val tmp = db.run(userSessions.filter(u => u.session === (session \ "uuid").as[String]).result).map(dbObject => dbObject.head)

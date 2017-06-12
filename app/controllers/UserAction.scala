@@ -17,7 +17,7 @@ import play.api.libs.json._
 
 import scala.concurrent.{Await, Future}
 /**
-  * Created by lux on 19/05/2017.
+  * The is the custom action that checks the token and return the corresponding user.
   */
 
 class AuthenticatedRequest[A](val user: User, val request: Request[A]) extends WrappedRequest[A](request)
@@ -28,6 +28,16 @@ object UserAction extends ActionBuilder[AuthenticatedRequest] {
   val users: TableQuery[UserTableDef] = TableQuery[UserTableDef]
 
 
+  /**
+    * Checks the token, unwrap it, checks the user session and give an AuthenticatedRequest to block
+    *
+    * @param request The upcoming request
+    * @param block The upcoming block
+    * @tparam A The type of the request
+    *
+    * @return 400 if the auth header is missing or on unexpected errors.
+    *         403 on invalid token/session and outdated sessions.
+    */
   override def invokeBlock[A](request: Request[A], block: (AuthenticatedRequest[A]) => Future[Result]): Future[Result] = {
     try {
       val session: JsObject = JwtJson.decodeJson(request.headers.get("auth").get, utils.ConfConf.serverSecret, Seq(JwtAlgorithm.HS512)).get

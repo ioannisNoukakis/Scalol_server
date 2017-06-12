@@ -4,8 +4,7 @@ import play.api.mvc.EssentialFilter
 import play.filters.cors.CORSFilter
 
 @Singleton
-class Filters @Inject()(
-                         corsFilter: CORSFilter) extends HttpFilters {
+class Filters @Inject()(corsFilter: CORSFilter) extends HttpFilters {
 
   override def filters: Seq[EssentialFilter] = Seq(
     corsFilter

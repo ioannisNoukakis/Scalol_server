@@ -13,7 +13,7 @@ import play.api.libs.concurrent.Execution.Implicits._
 import scala.concurrent.Future
 
 /**
-  * Created by durza9390 on 25.05.2017.
+  * This is the comment endpoint. Everything related to comments is made here.
   */
 @Singleton
 class CommentEndpoint @Inject()(CommentDAO: CommentService, UserDAO: UserService) extends Controller {
@@ -21,6 +21,14 @@ class CommentEndpoint @Inject()(CommentDAO: CommentService, UserDAO: UserService
   import models.Comment.commentReads
   import models.Comment.commentWrites
 
+  /**
+    * Adds a comment to a post.
+    * This require an authenticated user. See UserAction for more details.
+    *
+    * @return 400 if the body is wrong or incomplete or if an unknown error appears.
+    *         404 if the post to be commented does not exists.
+    *         200 otherwise.
+    */
   def addComment = UserAction.async(BodyParsers.parse.json) { implicit request =>
     val result = request.body.validate[Comment]
     result.fold(
@@ -37,6 +45,13 @@ class CommentEndpoint @Inject()(CommentDAO: CommentService, UserDAO: UserService
     )
   }
 
+  /**
+    * Gets the comments from a post.
+    *
+    * @return 400 if an unknown error appears.
+    *         404 if the post to be commented does not exists.
+    *         200 otherwise.
+    */
   def getComments(post_id: Long) = Action.async { implicit request =>
     CommentDAO.findByPostId(post_id).map(result => Ok(Json.toJson(result)))
       .recover {

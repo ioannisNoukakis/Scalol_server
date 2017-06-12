@@ -5,6 +5,9 @@ import scala.concurrent._
 import javax.inject.Singleton
 import play.api.libs.json.Json
 
+/**
+  * Simple handler for default errors.
+  */
 @Singleton
 class ErrorHandler extends HttpErrorHandler {
 

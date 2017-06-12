@@ -3,7 +3,7 @@ package models
 import slick.driver.MySQLDriver.api._
 
 /**
-  * Created by lux on 06.06.17.
+  * Abstract model for the CommonService.
   */
 abstract class BaseModel(id: Option[Long])
 

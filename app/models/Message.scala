@@ -7,7 +7,7 @@ import slick.driver.MySQLDriver.api._
 import slick.jdbc.GetResult
 
 /**
-  * Created by durza9390 on 28.05.2017.
+  * Message model
   */
 case class Message(content: String,
                    viewed: Boolean,

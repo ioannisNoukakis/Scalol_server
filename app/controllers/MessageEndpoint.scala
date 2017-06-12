@@ -19,7 +19,7 @@ import services.{AuthService, MessageService, UserService}
 import scala.concurrent.{Await, Future}
 
 /**
-  * Created by durza9390 on 28.05.2017.
+  * The is the message endpoint. Both websocket and plain http chat are made here.
   */
 @Singleton
 class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: UserService, authService: AuthService, system: ActorSystem, materializer: Materializer) extends Controller {
@@ -28,6 +28,15 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
   import models.MessageFrom.messageWrites
   import models.MessageTo.messageReads
 
+  /**
+    * Adds a message on a conversation or creates a conversation.
+    * This require an authenticated user. See UserAction for more details.
+    *
+    * @return 400 if the body is wrong or incomplete.
+    *         403 if the users how you wish to speak to has blocked you.
+    *         404 if the requested user is not found.
+    *         200 otherwise.
+    */
   def addMessage(to_username: String) = UserAction.async(BodyParsers.parse.json) { implicit request =>
     val result = request.body.validate[MessageTo]
     result.fold(
@@ -56,6 +65,13 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
     )
   }
 
+  /**
+    * Get a summary of the users conversation.
+    * This require an authenticated user. See UserAction for more details.
+    *
+    * @return 400 if an error occures.
+    *         200 otherwise.
+    */
   def getUserInbox() = UserAction.async { implicit request =>
     MessageDAO.getUserMailBox(request.user.id.get).map(p => Ok(Json.toJson(p.map(a =>{
       MessageBox(Await.result(a.first_id match {
@@ -66,6 +82,13 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
       .recover { case cause => BadRequest(Json.obj("cause" -> cause.getMessage)) }
   }
 
+  /**
+    * Get the history of messages with an other user.
+    * This require an authenticated user. See UserAction for more details.
+    *
+    * @return 404 if the requested user is not found.
+    *         200 otherwise.
+    */
   def getMessagesFrom(from_username: String) = UserAction.async { implicit request =>
     UserDAO.findByUserName(from_username).flatMap(u => {
       MessageDAO.getLastMessages(request.user.id.get, u.id.get).map(r => Ok(Json.toJson(r.map {
@@ -76,7 +99,14 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
       .recover { case cause => NotFound(Json.obj("cause" -> cause.getMessage)) }
   }
 
-
+  /**
+    * Blocks a user from the chat system. It also kills
+    * the two ChatActor if any user were connected to the chat live system.
+    * This require an authenticated user. See UserAction for more details.
+    *
+    * @return 404 if the requested user is not found.
+    *         200 otherwise.
+    */
   def blockUser(username: String) = UserAction.async { implicit request =>
     UserDAO.findByUserName(username).flatMap(u => {
       MessageDAO.updateBlockFromUser(request.user.id.get, u.id.get, true).map(_ => {
@@ -96,6 +126,13 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
       .recover { case cause => NotFound(Json.obj("cause" -> cause.getMessage)) }
   }
 
+  /**
+    * Unblock a user on the chat system.
+    * This require an authenticated user. See UserAction for more details.
+    *
+    * @return 404 if the requested user is not found.
+    *         200 otherwise.
+    */
   def unblockUser(username: String) = UserAction.async { implicit request =>
     UserDAO.findByUserName(username).flatMap(u => {
       MessageDAO.updateBlockFromUser(request.user.id.get, u.id.get, false).map(_ => {
@@ -105,6 +142,13 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
       .recover { case cause => NotFound(Json.obj("cause" -> cause.getMessage)) }
   }
 
+  /**
+    * Marks a history of message with a user as read.
+    * This require an authenticated user. See UserAction for more details.
+    *
+    * @return 404 if the requested user is not found.
+    *         200 otherwise.
+    */
   def markAsRead(to_username: String) = UserAction.async { implicit request =>
     UserDAO.findByUserName(to_username).flatMap(u => {
       MessageDAO.updateViewed(request.user.id.get, u.id.get).map(_ => {
@@ -114,6 +158,13 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
       .recover { case cause => NotFound(Json.obj("cause" -> cause.getMessage)) }
   }
 
+  /**
+    * Helper function to notifiy the clients on the notify channel and create a flow.
+    *
+    * @param to: The destination user
+    * @param from: The source user
+    * @return a Flow[in, out, _]
+    */
   def notifyAndCreateActor(to: User, from: User) = {
     NotificationActor.clients.filter(_.user == to).foreach(_.sendNotification(from.username + " is now online!"))
     Future {
@@ -121,6 +172,12 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
     }
   }
 
+  /**
+    * Websocket endpoint to connect to the chat live system.
+    * This require an authenticated user. See UserAction for more details.
+    *
+    * @return a string response to the user.
+    */
   def chat(token: Option[String], to: Option[String]) = WebSocket.accept[String, String] { request =>
     try {
       //verify token
@@ -151,6 +208,12 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
     }
   }
 
+  /**
+    * Websocket endpoint to connect to the notification live system.
+    * This require an authenticated user. See UserAction for more details.
+    *
+    * @return a string response to the user.
+    */
   def notification(token: Option[String]) = WebSocket.accept[String, String] { request =>
     try {
       //verify token

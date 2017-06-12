@@ -6,7 +6,7 @@ import play.api.libs.json._
 import slick.driver.MySQLDriver.api._
 
 /**
-  * Created by lux on 16/04/2017.
+  * User model
   */
 
 case class User(username: String,

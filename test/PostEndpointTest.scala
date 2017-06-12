@@ -41,9 +41,9 @@ class PostEndpointTest extends PlaySpec with OneServerPerSuite {
       .withHeaders(("auth", sharedToken))
       .post(data))
     response.status mustBe OK
-    assert(response.body.startsWith("{\"location:\":\"nixme.ddns.net/posts/"))
+    assert(response.body.startsWith("{\"location:\":\"https://nixme.ddns.net/posts/"))
     assert(response.body.endsWith("\"owner: \":\"" + sharedUsername + "\"}"))
-    post_id = response.body.split("[{}\":]")(6).split("/")(2).toInt
+    post_id = response.body.split("[{}\":]")(7).split("/")(4).toInt
   }
 
   "Post Endpoint should not be able to create a post if json is incomplete" in {

@@ -6,16 +6,22 @@ import models.{Comment, CommentTableDef}
 import play.api.db.slick.DatabaseConfigProvider
 import slick.lifted.TableQuery
 import slick.driver.MySQLDriver.api._
+import scala.concurrent.ExecutionContext.Implicits.global
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 /**
-  * Created by durza9390 on 25.05.2017.
+  * Comment service
   */
 class CommentService @Inject() (protected val dbConfigProvider: DatabaseConfigProvider) extends CommonService[Comment, CommentTableDef]{
   override protected val table: TableQuery[CommentTableDef] = TableQuery[CommentTableDef]
 
-  def findByPostId(p: Long)(implicit ec: ExecutionContext): Future[Seq[Comment]] = {
+  /**
+    * Finds a post by it's id
+    * @param p the post id
+    * @return
+    */
+  def findByPostId(p: Long): Future[Seq[Comment]] = {
     db.run(table.filter(_.post_id === p).result)
   }
 }

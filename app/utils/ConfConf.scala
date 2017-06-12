@@ -7,5 +7,7 @@ object ConfConf {
 
   val serverAdress = "https://nixme.ddns.net/"
   val serverSecret = "Aaaaaughibbrgubugbugrguburgle! aka RwlRwlRwlRw"
+  val MAX_UPLOAD_SIZE = 5000000 //Byte
+  val HOSTNAME_IMAGE = "image/"
 
 }

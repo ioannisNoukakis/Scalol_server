@@ -12,7 +12,7 @@ import play.api.libs.concurrent.Execution.Implicits._
 import scala.concurrent.{Await, Future}
 
 /**
-  * Created by lux on 22/05/2017.
+  * This is the post endpoint. Here is managed everything related to post and image upload.
   */
 @Singleton
 class PostEndpoint @Inject()(PostDAO: PostService, UserDAO : UserService) extends Controller {
@@ -20,9 +20,13 @@ class PostEndpoint @Inject()(PostDAO: PostService, UserDAO : UserService) extend
   import models.PostPartial.postViewReads
   import models.PostView.postWrites
 
-  val MAX_UPLOAD_SIZE = 5000000 //Byte
-  val HOSTNAME_IMAGE = "image/"
-
+  /**
+    * Adds a post to the server.
+    * This require an authenticated user. See UserAction for more details.
+    *
+    * @return 400 if the body is wrong or incomplete or if an unknown error appears.
+    *         200 otherwise.
+    */
   def addPost = UserAction.async(BodyParsers.parse.json) { implicit request =>
     val result = request.body.validate[PostPartial]
     result.fold(
@@ -37,20 +41,50 @@ class PostEndpoint @Inject()(PostDAO: PostService, UserDAO : UserService) extend
     )
   }
 
+  /**
+    * Helper for post write. System requires to have the username post owner instead of their id.
+    * This is a temporary solution and soon the username will be added to the post table as well.
+    *
+    * @param post the post to be converted.
+    * @return a PostView
+    */
   def convertHelper(post: Post): PostView ={
     val user = Await.result(UserDAO.findById(post.owner_id), scala.concurrent.duration.Duration.Inf)
     PostView(post.title, post.image_path, post.score, post.nsfw, user.username, post.id.get)
   }
 
+  /**
+    * Get a list of posts. If no querystring parameter, will return the 100 last posts.
+    *
+    * @param offset: the post id from where to take posts.
+    * @param number: the number of posts to take.
+    * @return a list of posts to the client.
+    */
   def getPosts(offset: Option[Long], number: Option[Long]) = Action.async { implicit request =>
     PostDAO.all(offset.getOrElse(-1), number.getOrElse(100)).map(result => Ok(Json.toJson(result.map(post => convertHelper(post)))))
   }
 
+  /**
+    * Get a post by id.
+    *
+    * @param post_id the post to be retrived.
+    * @return 404 if the post was not found
+    *         200 otherwise
+    */
   def findPostById(post_id: Long) = Action.async { implicit request =>
     PostDAO.findById(post_id).map(post => Ok(Json.toJson(convertHelper(post))))
       .recover { case cause => NotFound(Json.obj("cause" -> "Post not found")) }
   }
 
+  /**
+    * Upvotes a post.
+    * This require an authenticated user. See UserAction for more details.
+    *
+    * @param post_id the post to be upvoted.
+    * @return 400 on unexpected errors.
+    *         403 if you have already upvoted the post
+    *         200 otherwise
+    */
   def upvote(post_id: Long) = UserAction.async { implicit request =>
     PostDAO.findById(post_id).flatMap(_ => {
       PostDAO.updateUserAndPostUpvotesOrFalse(post_id, request.user.id.get, 1).flatMap {
@@ -67,15 +101,24 @@ class PostEndpoint @Inject()(PostDAO: PostService, UserDAO : UserService) extend
       }
   }
 
+  /**
+    * Downvotes a post.
+    * This require an authenticated user. See UserAction for more details.
+    *
+    * @param post_id the post to be downvoted.
+    * @return 400 on unexpected errors.
+    *         403 if you have already downvoted the post
+    *         200 otherwise
+    */
   def downvote(post_id: Long) = UserAction.async { implicit request =>
     PostDAO.findById(post_id).flatMap(_ => {
-      PostDAO.updateUserAndPostUpvotesOrFalse(post_id, request.user.id.get, -1).flatMap(a => a match {
+      PostDAO.updateUserAndPostUpvotesOrFalse(post_id, request.user.id.get, -1).flatMap {
         case (true, true) => PostDAO.modifyScore(post_id, -2).map(_ => Ok(Json.obj("status" -> "ok")))
         case (true, false) => PostDAO.modifyScore(post_id, -1).map(_ => Ok(Json.obj("status" -> "ok")))
         case (false, false) => Future {
           Forbidden(Json.obj("cause" -> "You have already upvoted this post."))
         }
-      })
+      }
     })
       .recover {
         case _: UnsupportedOperationException => NotFound(Json.obj("cause" -> "Nonexistent post."))
@@ -83,8 +126,15 @@ class PostEndpoint @Inject()(PostDAO: PostService, UserDAO : UserService) extend
       }
   }
 
+  /**
+    * Uploads a picture (PNG/JPEG/GIF) to the server.
+    * This require an authenticated user. See UserAction for more details.
+    *
+    * @return 400 if the file is greater than 5MB or on unexpected error.
+    *         200 otherwise
+    */
   def uploadPic = UserAction.async(parse.multipartFormData) { request =>
-    if (request.request.headers.get("Content-Length").get.toInt > MAX_UPLOAD_SIZE)
+    if (request.request.headers.get("Content-Length").get.toInt > utils.ConfConf.MAX_UPLOAD_SIZE)
       Future {
         BadRequest(Json.obj("status" -> "File is too big (Max size: 5'000'000 Bytes)"))
       }
@@ -103,7 +153,7 @@ class PostEndpoint @Inject()(PostDAO: PostService, UserDAO : UserService) extend
         new File(s"/scalolUploads").mkdir()
         picture.ref.moveTo(new File(s"/scalolUploads/$filename"))
         Future {
-          Ok(Json.obj("location" -> (utils.ConfConf.serverAdress + HOSTNAME_IMAGE + filename)))
+          Ok(Json.obj("location" -> (utils.ConfConf.serverAdress + utils.ConfConf.HOSTNAME_IMAGE + filename)))
         }
       }.getOrElse {
         Future {

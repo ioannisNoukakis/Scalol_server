@@ -4,7 +4,7 @@ import play.api.libs.json.Json
 import slick.driver.MySQLDriver.api._
 
 /**
-  * Created by durza9390 on 25.05.2017.
+  * Comments model
   */
 case class Comment(post_id: Long, content: String, username: Option[String], id: Option[Long])
   extends BaseModel(id)

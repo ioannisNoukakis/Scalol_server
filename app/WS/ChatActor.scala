@@ -15,9 +15,8 @@ import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
-  * Created by durza9390 on 06.06.2017.
+  * Chat actor
   */
-
 object ChatActor {
   val db = DatabaseConfigProvider.get[JdbcProfile](Play.current).db
   val messages = TableQuery[MessageTableDef]
@@ -26,8 +25,19 @@ object ChatActor {
   def props(out: ActorRef, from: User, to: User) = Props(new ChatActor(from, to, out))
 }
 
+/**
+  * Chat actor from the live chat system. It's like a stream of letters from a user to an other.
+  *
+  * @param from the user that sens messages
+  * @param to the user that receive messages
+  * @param out the connection with the websocket of this client so it can receive the
+  *            messages from the other user (to).
+  */
 case class ChatActor(from: User, to: User, out: ActorRef) extends Actor {
 
+  /**
+    * Here we register the actor to the live system and we say hello.
+    */
   override def preStart() = {
     super.preStart()
     ChatActor.clients += this
@@ -39,6 +49,10 @@ case class ChatActor(from: User, to: User, out: ActorRef) extends Actor {
     }
   }
 
+  /**
+    * When we receive a message from the client we forward it to the destination.
+    * @return
+    */
   def receive = {
     case msg: String => {
       ChatActor.clients.filter(_.from == to).foreach(p => {
@@ -47,12 +61,16 @@ case class ChatActor(from: User, to: User, out: ActorRef) extends Actor {
         NotificationActor.clients.filter(_.user == to).foreach(_.sendNotification(from.username +
           " has sent you a message!"))
         println("Sending: from: " + from.username  + " to: " + to.username + " message: " + msg)
-        p.out ! "[" + from.username + "]" + msg
+        p.out ! "[" + from.username + "] " + msg
       })
     }
   }
 
+  /**
+    * Upon disconnection, we remove the client from the live system.
+    */
   override def postStop() = {
+    ChatActor.clients.filter(_.from == to).foreach(_.out ! from.username + " has disconnected." )
     ChatActor.clients -= this
   }
 }
