@@ -52,7 +52,7 @@ class MessageEndpoint @Inject()(implicit MessageDAO: MessageService, UserDAO: Us
               }
               case false => MessageDAO.insert(Message(tmpM.content, false, false, new Date(Calendar.getInstance().getTime().getTime), request.user.id.get, u.id.get, None))
                 .map(_ => {
-                  NotificationActor.clients.filter(_.user == u).foreach(_.sendNotification(u.username + " has sent you a message!"))
+                  NotificationActor.clients.filter(_.user == u).foreach(_.sendNotification(u.username + " wants to chat with you. Click here!"))
                   Ok(Json.obj("state" -> "ok"))
                 })
             }
