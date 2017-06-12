@@ -14,3 +14,7 @@ run the runTest.sh file in order to perform tests.
 ## Deploy
 Simply run deploy.sh 
 Then go to your web browser at http://localhost:9000
+
+## Documentation
+The api documentation is available in the spec.yaml.
+Just copy paste its content into http://editor.swagger.io/#/
