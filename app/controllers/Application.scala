@@ -17,7 +17,7 @@ class Application extends Controller {
     Ok(Json.obj(
       "state" -> "Yea i'm up",
       "version" -> "v 1.0",
-      "frontEnd" -> "https://akessonhenrik.github.io/Scalol-frontend/signup.html"
+      "frontEnd" -> "https://akessonhenrik.github.io/Scalol-frontend/"
     ))
   }
 }

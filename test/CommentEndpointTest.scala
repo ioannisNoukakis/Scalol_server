@@ -13,6 +13,7 @@ class CommentEndpointTest extends PlaySpec with OneServerPerSuite {
 
   var sharedUsername = ""
   var sharedToken = ""
+  var post_id = -1
 
   "Given an auth user" in {
     sharedUsername = "user" + System.currentTimeMillis()
@@ -27,10 +28,28 @@ class CommentEndpointTest extends PlaySpec with OneServerPerSuite {
     sharedToken = response.body.split("[{}\":]")(5)
   }
 
+  // POST   /posts
+  "And a post" in {
+    val data = Json.obj(
+      "title" -> "Da robbery",
+      "image_path" -> "https://img-9gag-fun.9cache.com/photo/aG1m8e0_700b.jpg",
+      "nsfw" -> false
+    )
+    val response = await(wsClient.url(s"http://$publicAddress" + "/posts")
+      .withHeaders(("Content-Type", "application/json"))
+      .withHeaders(("auth", sharedToken))
+      .post(data))
+    val tmp = response.body
+    response.status mustBe OK
+    assert(response.body.startsWith("{\"location:\":\"https://nixme.ddns.net/posts/"))
+    assert(response.body.endsWith("\"owner: \":\"" + sharedUsername + "\"}"))
+    post_id = response.body.split("[{}\":]")(7).split("/")(4).toInt
+  }
+
   //POST
   "Comments endpoint should be able to post comments on a post" in {
     val data = Json.obj(
-      "post_id" -> 1,
+      "post_id" -> post_id,
       "content" -> "REPOST"
     )
 
@@ -44,7 +63,7 @@ class CommentEndpointTest extends PlaySpec with OneServerPerSuite {
 
   "Comments endpoint should not be able to post comments on a post if a field is missing" in {
     val data = Json.obj(
-      "post_id" -> 1
+      "post_id" -> post_id
     )
     val response = await(wsClient.url(URL)
       .withHeaders(
@@ -70,7 +89,7 @@ class CommentEndpointTest extends PlaySpec with OneServerPerSuite {
 
   "Comments endpoint should not be able to post comments on a post if the auth header is missing" in {
     val data = Json.obj(
-      "post_id" -> 1,
+      "post_id" -> post_id,
       "content" -> "REPOST3"
     )
     val response = await(wsClient.url(URL)
@@ -84,7 +103,7 @@ class CommentEndpointTest extends PlaySpec with OneServerPerSuite {
 
   //GET
   "Comments endpoint should be able to retrive comments" in {
-    val response = await(wsClient.url(URL + "/1")
+    val response = await(wsClient.url(URL + "/" + post_id)
       .get())
     response.status mustBe OK
     assert(!response.body.isEmpty)
